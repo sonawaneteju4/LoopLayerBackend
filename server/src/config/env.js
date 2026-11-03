@@ -83,6 +83,9 @@ export const env = {
     ADMIN_EMAIL: process.env.ADMIN_NOTIFICATION_EMAIL || 'orders@looplayerdesing.com',
   },
 
+  // HTTP Email API (Bypasses Render Free Tier SMTP port blocking over HTTPS port 443)
+  RESEND_API_KEY: process.env.RESEND_API_KEY || '',
+
   // Upload limits
   UPLOAD: {
     MAX_FILE_SIZE_MB: parseInt(process.env.MAX_FILE_SIZE_MB, 10) || 20,

@@ -80,7 +80,7 @@ export const sendMail = async ({
   }
 
   // Handle development mode when SMTP credentials are not yet configured
-  if (!env.SMTP.USER || !env.SMTP.PASS) {
+  if (!env.SMTP.USER && !env.SMTP.PASS && !env.RESEND_API_KEY) {
     logger.warn(`[Mail] Simulated send (missing SMTP credentials) -> To: ${cleanTo} | Subject: "${cleanSubject}"`);
     if (logRecord) {
       logRecord.status = 'Delivered';
@@ -97,7 +97,51 @@ export const sendMail = async ({
     };
   }
 
-  // Execute SMTP transport
+  // 1. If RESEND_API_KEY is configured, dispatch via HTTPS (Port 443 - bypasses Render Free Tier SMTP blocking)
+  if (env.RESEND_API_KEY) {
+    try {
+      const res = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${env.RESEND_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          from: env.SMTP.FROM,
+          to: [cleanTo],
+          subject: cleanSubject,
+          html,
+          text: fallbackText,
+        }),
+      });
+
+      const resData = await res.json();
+      if (!res.ok) {
+        throw new Error(resData.message || `Resend HTTP Error ${res.status}`);
+      }
+
+      const messageId = resData.id || `resend-${Date.now()}`;
+      if (logRecord) {
+        logRecord.status = 'Delivered';
+        logRecord.sentAt = new Date();
+        logRecord.messageId = messageId;
+        logRecord.errorMessage = null;
+        logRecord.metadata = { ...logRecord.metadata, provider: 'Resend HTTPS' };
+        await logRecord.save();
+      }
+
+      logger.info(`[Mail:Resend] Delivered successfully to ${cleanTo} (${type}) | ID: ${messageId}`);
+      return {
+        success: true,
+        messageId,
+        emailLogId: logRecord?._id,
+      };
+    } catch (httpError) {
+      logger.warn(`[Mail:Resend] HTTPS dispatch error: ${httpError.message}. Retrying via Zoho SMTP...`);
+    }
+  }
+
+  // 2. Execute SMTP transport (Zoho Mail)
   try {
     const mailOptions = {
       from: env.SMTP.FROM,
