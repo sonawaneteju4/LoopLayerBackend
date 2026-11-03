@@ -107,7 +107,7 @@ export const sendMail = async ({
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          from: env.SMTP.FROM,
+          from: env.RESEND_FROM || env.SMTP.FROM,
           to: [cleanTo],
           subject: cleanSubject,
           html,

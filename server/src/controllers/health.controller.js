@@ -117,6 +117,10 @@ export const getHealth = async (req, res) => {
         account: smtpDiagnostics.user,
         lastVerification: smtpDiagnostics.lastVerificationTime,
       },
+      resend: {
+        provider: 'Resend API (HTTPS Port 443)',
+        status: env.RESEND_API_KEY ? 'CONFIGURED' : 'UNCONFIGURED',
+      },
       storage: {
         provider: 'Cloudinary',
         status: isCloudinaryConfigured ? 'CONFIGURED' : 'UNCONFIGURED',

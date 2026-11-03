@@ -85,6 +85,10 @@ export const env = {
 
   // HTTP Email API (Bypasses Render Free Tier SMTP port blocking over HTTPS port 443)
   RESEND_API_KEY: process.env.RESEND_API_KEY || '',
+  RESEND_FROM:
+    process.env.RESEND_FROM ||
+    process.env.SMTP_FROM ||
+    `"${process.env.FROM_NAME || 'LoopLayer Designs'}" <${process.env.FROM_EMAIL || 'orders@looplayerdesing.com'}>`,
 
   // Upload limits
   UPLOAD: {
