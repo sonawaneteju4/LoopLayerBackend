@@ -44,3 +44,4 @@ services:
         value: orders@looplayerdesing.com
       - key: ADMIN_NOTIFICATION_EMAIL
         value: orders@looplayerdesing.com
+
