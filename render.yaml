@@ -29,7 +29,7 @@ services:
       - key: CLOUDINARY_API_SECRET
         sync: false
       - key: SMTP_HOST
-        value: smtp.zoho.com
+        value: smtp.zoho.in
       - key: SMTP_PORT
         value: 465
       - key: SMTP_SECURE

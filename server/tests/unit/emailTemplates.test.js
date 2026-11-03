@@ -6,6 +6,7 @@ import renderQuoteNotification from '../../src/templates/quoteNotification.templ
 import renderContactConfirmation from '../../src/templates/contactConfirmation.template.js';
 import renderContactNotification from '../../src/templates/contactNotification.template.js';
 import renderAdminReply from '../../src/templates/reply.template.js';
+import env from '../../src/config/env.js';
 
 const mockQuote = {
   _id: '672740a1b2c3d4e5f6a7b8e2',
@@ -52,7 +53,7 @@ test('Email Template - Customer Quote Confirmation formatting & content', () => 
   assert.ok(result.html.includes('Embroidery Digitizing'));
   assert.ok(result.html.includes('Visit Website'));
   assert.ok(result.html.includes('Nagpur, Maharashtra'));
-  assert.ok(result.html.includes('orders@looplayerdesing.com'));
+  assert.ok(result.html.includes(env.SMTP.FROM_EMAIL));
 
   // Ensure header uses typography only, NO img logo
   assert.ok(result.html.includes('Loop<span style="color: #2563EB;">Layer</span>'));

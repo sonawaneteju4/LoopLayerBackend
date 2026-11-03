@@ -70,7 +70,7 @@ export const env = {
 
   // Zoho Mail / SMTP Configuration
   SMTP: {
-    HOST: process.env.SMTP_HOST || 'smtp.zoho.com',
+    HOST: process.env.SMTP_HOST || 'smtp.zoho.in',
     PORT: parseInt(process.env.SMTP_PORT, 10) || 465,
     SECURE: process.env.SMTP_SECURE ? process.env.SMTP_SECURE === 'true' : true,
     USER: process.env.SMTP_USER || '',

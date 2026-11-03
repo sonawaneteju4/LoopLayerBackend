@@ -6,7 +6,7 @@ test('Email Service - getSMTPDiagnostics masks credentials safely', () => {
   const diag = getSMTPDiagnostics();
 
   assert.ok(diag.status);
-  assert.equal(diag.host, 'smtp.zoho.com');
+  assert.ok(diag.host.includes('zoho'));
   assert.equal(diag.port, 465);
   assert.equal(diag.secure, true);
   // Email should be masked

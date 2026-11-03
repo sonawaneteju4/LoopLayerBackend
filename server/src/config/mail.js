@@ -22,12 +22,17 @@ export const smtpDiagnostics = {
  * - Port 587 with STARTTLS (secure: false, requireTLS: true)
  */
 export const createMailTransporter = () => {
-  const isPort465 = Number(env.SMTP.PORT) === 465;
+  const port = Number(env.SMTP.PORT) || 465;
+  const isPort465 = port === 465;
+  // Enforce correct SSL/TLS mode to eliminate ssl3_get_record:wrong version number
+  // Port 465 requires secure: true (SSL/TLS)
+  // Port 587 requires secure: false with requireTLS: true (STARTTLS)
+  const secure = isPort465;
 
   const transportConfig = {
     host: env.SMTP.HOST,
-    port: Number(env.SMTP.PORT),
-    secure: env.SMTP.SECURE ?? isPort465,
+    port: port,
+    secure: secure,
     auth: {
       user: env.SMTP.USER,
       pass: env.SMTP.PASS,
@@ -41,6 +46,10 @@ export const createMailTransporter = () => {
       rejectUnauthorized: env.NODE_ENV === 'production',
     },
   };
+
+  if (!secure && port === 587) {
+    transportConfig.requireTLS = true;
+  }
 
   return nodemailer.createTransport(transportConfig);
 };
