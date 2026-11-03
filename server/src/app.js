@@ -7,6 +7,7 @@ import morgan from 'morgan';
 
 import env from './config/env.js';
 import logger, { morganStream } from './utils/logger.js';
+import { sendSuccess } from './utils/response.js';
 import { globalLimiter } from './middleware/rateLimiter.middleware.js';
 import { errorHandler, notFoundHandler } from './middleware/error.middleware.js';
 import authenticateAdmin from './middleware/auth.middleware.js';
@@ -93,8 +94,23 @@ app.use(
 app.use('/api', globalLimiter);
 
 // ==========================================
-// 6. HEALTH CHECK PROBES
+// 6. ROOT & HEALTH CHECK PROBES
 // ==========================================
+app.get('/', (req, res) => {
+  return sendSuccess(res, 200, 'LoopLayer Designs Backend API is running', {
+    status: 'ONLINE',
+    service: 'LoopLayer Designs Backend API',
+    version: '1.0.0',
+    documentation: {
+      health: '/health',
+      quotes: 'POST /api/quote',
+      contact: 'POST /api/contact',
+      login: 'POST /api/auth/login',
+      adminSetup: 'POST /api/auth/setup-admin',
+    },
+  });
+});
+
 app.use('/health', healthRoutes);
 app.use('/api/health', healthRoutes);
 

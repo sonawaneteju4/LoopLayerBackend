@@ -3,6 +3,13 @@ import assert from 'node:assert/strict';
 import request from 'supertest';
 import app from '../../src/app.js';
 
+test('Integration - GET / returns 200 operational welcome payload', async () => {
+  const res = await request(app).get('/');
+  assert.equal(res.status, 200);
+  assert.equal(res.body.success, true);
+  assert.equal(res.body.data.status, 'ONLINE');
+});
+
 test('Integration - GET /health returns 200 operational status with deep metrics', async () => {
   const res = await request(app).get('/health');
   assert.equal(res.status, 200);
