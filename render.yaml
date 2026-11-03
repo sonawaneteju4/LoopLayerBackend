@@ -1,0 +1,46 @@
+services:
+  - type: web
+    name: looplayer-backend
+    runtime: node
+    plan: free
+    region: oregon
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: CLIENT_URL
+        value: https://looplayerdesing.com
+      - key: ALLOWED_ORIGINS
+        value: https://looplayerdesing.com,https://www.looplayerdesing.com,http://localhost:3000
+      - key: MONGODB_URI
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: ADMIN_SETUP_SECRET
+        sync: false
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false
+      - key: CLOUDINARY_API_KEY
+        sync: false
+      - key: CLOUDINARY_API_SECRET
+        sync: false
+      - key: SMTP_HOST
+        value: smtp.zoho.com
+      - key: SMTP_PORT
+        value: 465
+      - key: SMTP_SECURE
+        value: true
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASS
+        sync: false
+      - key: FROM_NAME
+        value: LoopLayer Designs
+      - key: FROM_EMAIL
+        value: orders@looplayerdesing.com
+      - key: ADMIN_NOTIFICATION_EMAIL
+        value: orders@looplayerdesing.com

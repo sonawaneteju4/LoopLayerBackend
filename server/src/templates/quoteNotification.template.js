@@ -19,7 +19,7 @@ export const renderQuoteNotification = (quote) => {
   const customerName = `${quote.customer?.firstName || ''} ${quote.customer?.lastName || ''}`.trim() || 'Guest';
   const requestId = quote.requestId || 'LLD-2026-000001';
   const service = quote.service || 'Embroidery Digitizing';
-  const dashboardUrl = `${env.CLIENT_URL || 'https://looplayerdesign.com'}/admin/quotes/${quote._id || requestId}`;
+  const dashboardUrl = `${env.CLIENT_URL || 'https://looplayerdesing.com'}/admin/quotes/${quote._id || requestId}`;
 
   const subject = `New Quote Request — ${requestId}`;
 
@@ -139,3 +139,4 @@ Open Dashboard: ${dashboardUrl}
 };
 
 export default renderQuoteNotification;
+

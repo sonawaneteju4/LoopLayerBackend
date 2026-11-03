@@ -4,8 +4,12 @@ node_modules/
 .env.*.local
 logs/*.log
 !logs/.gitkeep
+server/logs/*.log
+!server/logs/.gitkeep
 uploads/temp/*
 !uploads/temp/.gitkeep
+server/uploads/temp/*
+!server/uploads/temp/.gitkeep
 .DS_Store
 dist/
 coverage/

@@ -25,7 +25,7 @@ export const renderQuoteConfirmation = (quote) => {
         day: 'numeric',
       })
     : new Date().toLocaleDateString('en-US');
-  const websiteUrl = env.CLIENT_URL || 'https://looplayerdesign.com';
+  const websiteUrl = env.CLIENT_URL || 'https://looplayerdesing.com';
 
   const subject = `We've Received Your Project Request [${requestId}]`;
 
@@ -142,3 +142,4 @@ ${env.SMTP.FROM_EMAIL}
 };
 
 export default renderQuoteConfirmation;
+

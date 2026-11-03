@@ -12,3 +12,4 @@ export const Divider = (margin = 24) => `
 `;
 
 export default Divider;
+

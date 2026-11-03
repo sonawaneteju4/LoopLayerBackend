@@ -131,3 +131,4 @@ export const EmailLayout = ({ title, previewText = '', content }) => `
 `;
 
 export default EmailLayout;
+

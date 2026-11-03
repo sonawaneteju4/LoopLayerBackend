@@ -236,10 +236,12 @@ This guarantees strict monotonicity and zero duplicates even under extreme concu
 | `SMTP_HOST` | String | `smtp.zoho.com` | Zoho SMTP host (`smtp.zoho.com` or `smtppro.zoho.com`) |
 | `SMTP_PORT` | Number | `465` | SMTP port (`465` for SSL, `587` for STARTTLS) |
 | `SMTP_SECURE` | Boolean | `true` | `true` for port 465, `false` for port 587 |
-| `SMTP_USER` | String | *Required* | Zoho mailbox address (e.g. `support@looplayer.com`) |
+| `SMTP_USER` | String | *Required* | Zoho mailbox address (e.g. `orders@looplayerdesign.com`) |
 | `SMTP_PASS` | String | *Required* | Zoho mailbox or 2FA App-specific password |
-| `SMTP_FROM` | String | `"LoopLayer" <...>` | Sender header address |
-| `ADMIN_NOTIFICATION_EMAIL`| String | `admin@looplayer.com`| Target inbox for quote/contact alerts |
+| `FROM_NAME` | String | `LoopLayer Designs` | Display name for outbound sender headers |
+| `FROM_EMAIL` | String | `orders@looplayerdesign.com` | Return mailbox address for customer replies |
+| `SMTP_FROM` | String | `"LoopLayer Designs" <...>` | Sender header address |
+| `ADMIN_NOTIFICATION_EMAIL`| String | `orders@looplayerdesign.com`| Target inbox for quote/contact alerts |
 | `MAX_FILE_SIZE_MB` | Number | `20` | Max file size per upload in MB |
 | `MAX_FILE_COUNT` | Number | `10` | Max files per quote request |
 | `RATE_LIMIT_GLOBAL_MAX` | Number | `300` | Max requests per 15 min per IP across the API |
@@ -266,19 +268,72 @@ Vector design and embroidery digitizing files require special storage treatment:
 
 Configured in `src/config/cloudinary.js` and managed in `src/services/cloudinary.service.js`.
 
-### 3. Zoho Mail SMTP
-For reliable outbound transaction emails:
-1. Log in to [Zoho Mail](https://mail.zoho.com).
-2. If Two-Factor Authentication (2FA/TFA) is enabled on your Zoho account, go to **My Account -> Security -> App Passwords** and generate a dedicated password.
-3. Configure `.env`:
+### 3. Zoho Mail SMTP & Email Infrastructure
+LoopLayer Designs features an enterprise email platform with:
+- **Connection Pooling**: Persistent SMTP connections with rate throttling (10 emails/sec) to comply with Zoho's sending policies and avoid reconnecting on every email.
+- **Fail-Safe Asynchronous Dispatch**: Outbound emails are non-blocking. If SMTP credentials are misconfigured or Zoho experiences an outage, the API request continues uninterrupted while failure diagnostics are logged to the `EmailLog` collection and Winston.
+- **Delivery Logging & Auditing**: Every email is captured in MongoDB with recipient, subject, status (`Delivered` or `Failed`), error reasons, timestamp, and message ID.
+- **Manual Retry Strategy**: Admins can retry failed emails directly from the admin dashboard via `POST /api/admin/emails/:id/retry`.
+- **Live SMTP Diagnostics**: Real-time status reporting on the dashboard settings page (`GET /api/admin/settings/smtp-status`).
+
+#### Zoho Mail SMTP Setup Steps:
+1. Log in to [Zoho Mail](https://mail.zoho.com) or Zoho Workplace.
+2. If Two-Factor Authentication (2FA/TFA) is enabled on your Zoho account, go to **My Account -> Security -> App Passwords** and generate a dedicated app password.
+3. In Zoho Mail **Settings -> Mail Accounts -> POP/IMAP and SMTP Configuration**, ensure SMTP access is enabled.
+4. Configure `.env`:
    ```env
    SMTP_HOST=smtp.zoho.com
    SMTP_PORT=465
    SMTP_SECURE=true
-   SMTP_USER=support@looplayer.com
+   SMTP_USER=orders@looplayerdesign.com
    SMTP_PASS=your_zoho_app_password
+   FROM_NAME="LoopLayer Designs"
+   FROM_EMAIL=orders@looplayerdesign.com
+   ADMIN_NOTIFICATION_EMAIL=orders@looplayerdesign.com
    ```
-4. The service uses a pooled transporter with rate throttling (10 emails/sec) to comply with Zoho's outgoing volume policies.
+   *(For organization accounts on Zoho Workplace, `SMTP_HOST` may alternatively be `smtppro.zoho.com`.)*
+
+#### Troubleshooting Zoho SMTP:
+- **Error: 535 Authentication Failed**: The password provided is incorrect, or 2FA is active requiring an App-specific password instead of the account login password.
+- **Error: Connection Timeout (Port 465)**: Cloud providers or local firewalls may block outbound port 465. In that case, switch to port `587` with `SMTP_SECURE=false`.
+- **Error: 553 Relaying Disallowed**: The `FROM_EMAIL` header does not match the authenticated `SMTP_USER` mailbox or an authorized alias in Zoho. Ensure `FROM_EMAIL` matches `SMTP_USER`.
+
+---
+
+## Branded Email Design System & Components
+
+Every email strictly complies with the LoopLayer Designs design system:
+- **Typography Only Header**: Features "LoopLayer Designs" + "Professional embroidery digitizing and vector artwork solutions." Pure typography hierarchy with zero external image requests.
+- **Brand Palette**:
+  - Primary: `#0F172A` (Deep Slate)
+  - Secondary: `#2563EB` (Royal Blue)
+  - Accent: `#F97316` (Warm Amber)
+  - Background: `#F8FAFC` (Clean Canvas)
+  - Cards: `#FFFFFF` with `#E2E8F0` borders and soft shadows
+- **Typography**: Inter with cross-platform native fallbacks (`-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif`).
+- **Layout Constraints**: Max width `640px`, centered, 100% mobile responsive.
+- **Consistent Footer**:
+  - LoopLayer Designs
+  - Nagpur, Maharashtra &bull; orders@looplayerdesign.com
+  - Website & Social Links placeholders
+  - Copyright & Privacy Notice
+
+### Modular Component Library (`src/templates/components/`):
+- `EmailLayout`: Responsive master container table with reset styles, Inter webfont, preheader text, header, and footer.
+- `Header`: Pure typography header block with brand tagline.
+- `Footer`: Physical location, contact email, navigation links, copyright, and privacy statement.
+- `PrimaryButton`: Table-based bulletproof primary action CTA button.
+- `SecondaryButton`: Subtle secondary button for dashboard navigation.
+- `Divider`: Minimal 1px border line separator with customizable vertical margin.
+- `InfoCard`: Soft rounded card with left border color accent and optional title badge.
+- `Table`: Key-value grid for project specifications, customer details, and dimensions.
+
+### Handcrafted Templates (`src/templates/`):
+1. **`quoteConfirmation.template.js`**: Sent to customer upon quote submission. Confirms request receipt, provides Request ID, details selected service, submission date, customer info, and next steps timeline.
+2. **`quoteNotification.template.js`**: Alert sent to admin. Includes customer contact details, country, service, dimensions, requirements, direct links to uploaded artwork files, and an "Open In Dashboard" button.
+3. **`contactConfirmation.template.js`**: Sent to customer upon submitting contact inquiry. Acknowledges receipt and provides expected 1 business day turnaround.
+4. **`contactNotification.template.js`**: Alert sent to admin with sender details, subject, full message content, and dashboard link.
+5. **`reply.template.js`**: Sent to customer directly from the dashboard composer. Maintains branded styling, inserts sanitized rich text message, displays attachments, and preserves full conversation thread history.
 
 ### 4. JWT & Security Controls
 - **JWT**: Signed with HMAC-SHA256 containing `{ id, username, role }`. Verified via `authenticateAdmin` middleware.
@@ -312,18 +367,94 @@ All responses follow the unified standard response envelope.
 
 ---
 
-### Health & Diagnostics
+### Health & Diagnostics API
 
 #### `GET /health` or `GET /api/health`
+Deep health check inspecting MongoDB Atlas connection & latency, Zoho SMTP health, Cloudinary storage configuration, system memory (heap & RSS), CPU architecture, and process uptime.
 - **Access**: Public
-- **Response**:
+- **Response (200 OK / 503 Service Unavailable)**:
 ```json
 {
   "success": true,
-  "message": "LoopLayer Designs API is healthy and operational",
-  "timestamp": "2026-11-03T10:00:00.000Z",
-  "environment": "development",
-  "uptime": "124 seconds"
+  "message": "System status: UP",
+  "data": {
+    "status": "UP",
+    "service": "LoopLayer Designs Backend API",
+    "environment": "development",
+    "timestamp": "2026-11-03T16:50:00.000Z",
+    "uptime": {
+      "seconds": 342,
+      "formatted": "5m 42s"
+    },
+    "latencyMs": 4,
+    "dependencies": {
+      "database": {
+        "provider": "MongoDB Atlas",
+        "status": "CONNECTED",
+        "healthy": true,
+        "latencyMs": 2,
+        "host": "cluster0.jq8vqvt.mongodb.net",
+        "name": "looplayer"
+      },
+      "smtp": {
+        "provider": "Zoho Mail",
+        "status": "SMTP Connected",
+        "host": "smtp.zoho.com",
+        "port": 465,
+        "secure": true,
+        "account": "or****@looplayerdesing.com"
+      },
+      "storage": {
+        "provider": "Cloudinary",
+        "status": "CONFIGURED",
+        "cloudName": "doqjjtzn",
+        "folder": "looplayer"
+      }
+    },
+    "system": {
+      "nodeVersion": "v22.18.0",
+      "platform": "darwin",
+      "arch": "arm64",
+      "cpuCores": 8,
+      "memory": {
+        "heapUsed": "48.20 MB",
+        "heapTotal": "62.50 MB",
+        "rss": "95.12 MB"
+      }
+    }
+  }
+}
+```
+
+#### `GET /health/live` or `GET /api/health/live`
+Ultra-fast liveness probe for Kubernetes, Docker, and uptime monitoring services.
+- **Access**: Public
+- **Response (200 OK)**:
+```json
+{
+  "success": true,
+  "message": "Process is alive",
+  "data": {
+    "status": "ALIVE",
+    "uptime": 342,
+    "timestamp": "2026-11-03T16:50:00.000Z"
+  }
+}
+```
+
+#### `GET /health/ready` or `GET /api/health/ready`
+Readiness probe verifying that the database connection is established before routing live traffic.
+- **Access**: Public
+- **Response (200 OK / 503 Service Unavailable)**:
+```json
+{
+  "success": true,
+  "message": "Service is ready to handle traffic",
+  "data": {
+    "status": "READY",
+    "database": "CONNECTED",
+    "timestamp": "2026-11-03T16:50:00.000Z"
+  }
 }
 ```
 
@@ -687,6 +818,201 @@ Send email directly to customer from dashboard and record in quote history.
 
 #### `DELETE /api/admin/contact/:id`
 - **Response**: Deletion confirmation
+
+---
+
+### Admin Email Management & Diagnostics API
+
+All endpoints require `Authorization: Bearer <token>`.
+
+#### `GET /api/admin/settings/smtp-status`
+Retrieve real-time SMTP connection health, host, port, secure mode, and masked authentication identity.
+- **Response (200 OK)**:
+```json
+{
+  "success": true,
+  "message": "SMTP diagnostics retrieved",
+  "data": {
+    "status": "SMTP Connected",
+    "lastVerificationTime": "2026-11-03T16:00:00.000Z",
+    "host": "smtp.zoho.com",
+    "port": 465,
+    "secure": true,
+    "user": "or****@looplayerdesign.com",
+    "fromName": "LoopLayer Designs",
+    "fromEmail": "orders@looplayerdesign.com",
+    "lastError": null
+  }
+}
+```
+
+#### `POST /api/admin/settings/smtp-test`
+Trigger an active live socket and handshake verification test to Zoho SMTP servers.
+- **Response (200 OK)**:
+```json
+{
+  "success": true,
+  "message": "SMTP Verification: SMTP Connected",
+  "data": {
+    "status": "SMTP Connected",
+    "lastVerificationTime": "2026-11-03T16:05:00.000Z",
+    "verification": {
+      "connected": true,
+      "simulated": false,
+      "status": "SMTP Connected",
+      "lastVerificationTime": "2026-11-03T16:05:00.000Z"
+    }
+  }
+}
+```
+
+#### `GET /api/admin/emails`
+Paginated email delivery history and audit trail.
+- **Query Parameters**:
+  - `page` (Default: `1`)
+  - `limit` (Default: `20`)
+  - `status` (`Delivered`, `Failed`, or `All`)
+  - `type` (`quote_confirmation`, `quote_notification`, `contact_confirmation`, `contact_notification`, `admin_reply`, `custom`)
+  - `search` (Search across recipient, recipientName, subject, or relatedId)
+  - `recipient` (Filter by recipient email)
+  - `relatedId` (Filter by Request ID e.g. `LLD-2026-000001`)
+- **Response (200 OK)**:
+```json
+{
+  "success": true,
+  "message": "Email delivery logs retrieved successfully",
+  "data": {
+    "logs": [
+      {
+        "_id": "672740a1b2c3d4e5f6a7b901",
+        "recipient": "customer@example.com",
+        "recipientName": "Marcus Vance",
+        "subject": "We've Received Your Project Request [LLD-2026-000001]",
+        "type": "quote_confirmation",
+        "relatedId": "LLD-2026-000001",
+        "relatedType": "Quote",
+        "status": "Delivered",
+        "attemptCount": 1,
+        "sentAt": "2026-11-03T10:10:02.000Z",
+        "messageId": "<c28f-4a0b-93f1@looplayerdesign.com>",
+        "createdAt": "2026-11-03T10:10:01.000Z"
+      }
+    ],
+    "pagination": {
+      "total": 48,
+      "page": 1,
+      "limit": 20,
+      "totalPages": 3
+    }
+  }
+}
+```
+
+#### `GET /api/admin/emails/:id`
+Retrieve full email delivery log record, including complete rendered HTML content and failure error stack (if any).
+- **Response (200 OK)**:
+```json
+{
+  "success": true,
+  "message": "Email log details retrieved",
+  "data": {
+    "_id": "672740a1b2c3d4e5f6a7b901",
+    "recipient": "customer@example.com",
+    "subject": "We've Received Your Project Request [LLD-2026-000001]",
+    "status": "Delivered",
+    "htmlContent": "<!DOCTYPE html><html>...",
+    "textContent": "Hello Marcus..."
+  }
+}
+```
+
+#### `POST /api/admin/emails/:id/retry`
+Manually trigger a delivery retry for a previously failed email.
+- **Response (200 OK)**:
+```json
+{
+  "success": true,
+  "message": "Email retried and delivered successfully",
+  "data": {
+    "success": true,
+    "messageId": "<new-message-id@looplayerdesign.com>",
+    "emailLog": {
+      "_id": "672740a1b2c3d4e5f6a7b901",
+      "status": "Delivered",
+      "attemptCount": 2,
+      "lastAttemptAt": "2026-11-03T16:10:00.000Z"
+    }
+  }
+}
+```
+
+#### `POST /api/admin/emails/preview`
+Generate real-time HTML preview of any template before sending.
+- **Request Body**:
+```json
+{
+  "type": "admin_reply",
+  "data": {
+    "recipientName": "Marcus Vance",
+    "subject": "Proof Approval Required",
+    "message": "<p>Please verify your color palette.</p>",
+    "referenceId": "LLD-2026-000001"
+  }
+}
+```
+- **Response (200 OK)**:
+```json
+{
+  "success": true,
+  "message": "Email preview rendered successfully",
+  "data": {
+    "subject": "[LLD-2026-000001] Proof Approval Required",
+    "html": "<!DOCTYPE html><html>...",
+    "text": "Hello Marcus Vance..."
+  }
+}
+```
+
+#### `POST /api/admin/emails/send`
+Dashboard Email Composer: Compose and dispatch a new branded email or reply to a customer.
+- **Request Body**:
+```json
+{
+  "to": "client@example.com",
+  "recipientName": "Elena Rostova",
+  "subject": "Update on Your Embroidery Digitizing Proof",
+  "message": "<p>Hello Elena,</p><p>We have adjusted the underlay density for pique knit.</p>",
+  "relatedId": "LLD-2026-000042",
+  "relatedType": "Quote",
+  "threadHistory": [
+    {
+      "author": "Elena Rostova",
+      "role": "customer",
+      "message": "Can you make sure it does not pucker on lightweight polos?",
+      "date": "2026-11-03T09:00:00.000Z"
+    }
+  ],
+  "attachments": [
+    {
+      "filename": "proof_v2.pdf",
+      "url": "https://res.cloudinary.com/demo/raw/upload/v1/proof_v2.pdf",
+      "size": 524288
+    }
+  ]
+}
+```
+- **Response (200 OK)**:
+```json
+{
+  "success": true,
+  "message": "Email dispatched successfully",
+  "data": {
+    "success": true,
+    "messageId": "<reply-msg-id@looplayerdesign.com>",
+    "emailLogId": "672740a1b2c3d4e5f6a7b955"
+  }
+}
+```
 
 ---
 

@@ -18,3 +18,4 @@ export const PrimaryButton = (text, href, align = 'center') => `
 `;
 
 export default PrimaryButton;
+

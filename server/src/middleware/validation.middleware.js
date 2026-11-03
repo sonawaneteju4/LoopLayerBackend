@@ -264,6 +264,46 @@ export const replyContactValidationRules = [
     .withMessage('Reply message is required'),
 ];
 
+/**
+ * Validation rules for Dashboard Email Composer
+ */
+export const composeEmailValidationRules = [
+  body('to')
+    .trim()
+    .notEmpty()
+    .withMessage('Recipient email address is required')
+    .isEmail()
+    .withMessage('A valid recipient email address is required')
+    .normalizeEmail(),
+
+  body('subject')
+    .trim()
+    .notEmpty()
+    .withMessage('Email subject is required')
+    .isLength({ max: 250 })
+    .withMessage('Email subject cannot exceed 250 characters'),
+
+  body('message')
+    .trim()
+    .notEmpty()
+    .withMessage('Email message body is required'),
+];
+
+export const previewEmailValidationRules = [
+  body('type')
+    .optional()
+    .trim()
+    .isIn([
+      'quote_confirmation',
+      'quote_notification',
+      'contact_confirmation',
+      'contact_notification',
+      'admin_reply',
+      'custom',
+    ])
+    .withMessage('Invalid template type for preview'),
+];
+
 export default {
   validate,
   sanitizeRichText,
@@ -275,5 +315,7 @@ export default {
   replyQuoteValidationRules,
   updateContactStatusValidationRules,
   replyContactValidationRules,
+  composeEmailValidationRules,
+  previewEmailValidationRules,
 };
 

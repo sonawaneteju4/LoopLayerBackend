@@ -36,3 +36,4 @@ export const InfoCard = (content, options = {}) => {
 };
 
 export default InfoCard;
+

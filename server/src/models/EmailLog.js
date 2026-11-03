@@ -123,3 +123,4 @@ emailLogSchema.index({
 
 export const EmailLog = mongoose.model('EmailLog', emailLogSchema);
 export default EmailLog;
+

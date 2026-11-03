@@ -13,7 +13,7 @@ import env from '../config/env.js';
 export const renderContactConfirmation = (contact) => {
   const name = contact.name || 'Valued Client';
   const subjectText = contact.subject || 'General Inquiry';
-  const websiteUrl = env.CLIENT_URL || 'https://looplayerdesign.com';
+  const websiteUrl = env.CLIENT_URL || 'https://looplayerdesing.com';
   const subject = "We've Received Your Message";
 
   const rows = [
@@ -107,3 +107,4 @@ Support: ${env.SMTP.FROM_EMAIL}
 };
 
 export default renderContactConfirmation;
+

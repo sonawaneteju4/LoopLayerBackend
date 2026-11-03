@@ -22,6 +22,7 @@ import authRoutes from './routes/auth.routes.js';
 import quoteRoutes from './routes/quote.routes.js';
 import contactRoutes from './routes/contact.routes.js';
 import adminRoutes from './routes/admin.routes.js';
+import healthRoutes from './routes/health.routes.js';
 
 const app = express();
 
@@ -82,7 +83,7 @@ const morganFormat = env.NODE_ENV === 'production' ? 'combined' : 'dev';
 app.use(
   morgan(morganFormat, {
     stream: morganStream,
-    skip: (req) => req.originalUrl === '/health' || req.originalUrl === '/api/health',
+    skip: (req) => req.originalUrl.startsWith('/health') || req.originalUrl.startsWith('/api/health'),
   })
 );
 
@@ -92,20 +93,10 @@ app.use(
 app.use('/api', globalLimiter);
 
 // ==========================================
-// 6. HEALTH CHECK
+// 6. HEALTH CHECK PROBES
 // ==========================================
-const healthPayload = (req, res) => {
-  res.status(200).json({
-    success: true,
-    message: 'LoopLayer Designs API is healthy and operational',
-    timestamp: new Date().toISOString(),
-    environment: env.NODE_ENV,
-    uptime: `${Math.round(process.uptime())} seconds`,
-  });
-};
-
-app.get('/health', healthPayload);
-app.get('/api/health', healthPayload);
+app.use('/health', healthRoutes);
+app.use('/api/health', healthRoutes);
 
 // ==========================================
 // 7. PRIMARY API ROUTES

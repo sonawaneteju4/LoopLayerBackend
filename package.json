@@ -4,7 +4,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "postinstall": "cd server && npm install",
+    "install": "npm install --prefix server",
+    "build": "npm install --prefix server",
+    "postinstall": "npm install --prefix server",
     "start": "npm start --prefix server",
     "dev": "npm run dev --prefix server",
     "test": "npm test --prefix server"

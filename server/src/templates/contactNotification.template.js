@@ -14,7 +14,7 @@ export const renderContactNotification = (contact) => {
   const name = contact.name || 'Anonymous';
   const subjectText = contact.subject || 'New Contact Submission';
   const subject = `New Contact Inquiry — ${name} [${subjectText}]`;
-  const dashboardUrl = `${env.CLIENT_URL || 'https://looplayerdesign.com'}/admin/contacts/${contact._id || ''}`;
+  const dashboardUrl = `${env.CLIENT_URL || 'https://looplayerdesing.com'}/admin/contacts/${contact._id || ''}`;
 
   const detailRows = [
     { label: 'Sender Name', value: name, isHighlighted: true },
@@ -98,3 +98,4 @@ View in Dashboard: ${dashboardUrl}
 };
 
 export default renderContactNotification;
+

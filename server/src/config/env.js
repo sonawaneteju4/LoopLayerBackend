@@ -5,8 +5,10 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Load .env from project root or server root
+// Load .env from process cwd, server dir, or project root
+dotenv.config();
 dotenv.config({ path: path.resolve(__dirname, '../../.env') });
+dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
 
 /**
  * Validate and export application environment variables.
@@ -37,10 +39,15 @@ if (isProduction) {
 export const env = {
   NODE_ENV: process.env.NODE_ENV || 'development',
   PORT: parseInt(process.env.PORT, 10) || 5000,
-  CLIENT_URL: process.env.CLIENT_URL || 'http://localhost:3000',
+  CLIENT_URL: process.env.CLIENT_URL || 'https://looplayerdesing.com',
   ALLOWED_ORIGINS: process.env.ALLOWED_ORIGINS
     ? process.env.ALLOWED_ORIGINS.split(',').map((o) => o.trim())
-    : ['http://localhost:3000', 'http://localhost:5173'],
+    : [
+        'https://looplayerdesing.com',
+        'https://www.looplayerdesing.com',
+        'http://localhost:3000',
+        'http://localhost:5173',
+      ],
 
   // Database
   MONGODB_URI:
@@ -69,11 +76,11 @@ export const env = {
     USER: process.env.SMTP_USER || '',
     PASS: process.env.SMTP_PASS || '',
     FROM_NAME: process.env.FROM_NAME || 'LoopLayer Designs',
-    FROM_EMAIL: process.env.FROM_EMAIL || 'orders@looplayerdesign.com',
+    FROM_EMAIL: process.env.FROM_EMAIL || 'orders@looplayerdesing.com',
     FROM:
       process.env.SMTP_FROM ||
-      `"${process.env.FROM_NAME || 'LoopLayer Designs'}" <${process.env.FROM_EMAIL || 'orders@looplayerdesign.com'}>`,
-    ADMIN_EMAIL: process.env.ADMIN_NOTIFICATION_EMAIL || 'orders@looplayerdesign.com',
+      `"${process.env.FROM_NAME || 'LoopLayer Designs'}" <${process.env.FROM_EMAIL || 'orders@looplayerdesing.com'}>`,
+    ADMIN_EMAIL: process.env.ADMIN_NOTIFICATION_EMAIL || 'orders@looplayerdesing.com',
   },
 
   // Upload limits

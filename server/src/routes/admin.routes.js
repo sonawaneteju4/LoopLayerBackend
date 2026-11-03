@@ -9,6 +9,9 @@ import {
   replyContactValidationRules,
 } from '../middleware/validation.middleware.js';
 
+import emailRoutes from './email.routes.js';
+import emailController from '../controllers/email.controller.js';
+
 const router = Router();
 
 // Enforce admin JWT authentication across all admin endpoints
@@ -123,6 +126,15 @@ router.post(
  * @desc    Delete contact inquiry
  */
 router.delete(['/contact/:id', '/contacts/:id'], adminController.deleteContact);
+
+/**
+ * ==========================================
+ * EMAIL INFRASTRUCTURE & SETTINGS
+ * ==========================================
+ */
+router.use('/emails', emailRoutes);
+router.get('/settings/smtp-status', emailController.getSMTPStatus);
+router.post('/settings/smtp-test', emailController.testSMTPConnection);
 
 export default router;
 

@@ -18,3 +18,4 @@ export const SecondaryButton = (text, href, align = 'center') => `
 `;
 
 export default SecondaryButton;
+

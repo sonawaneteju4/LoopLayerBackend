@@ -29,3 +29,4 @@ export const Table = (rows = []) => {
 };
 
 export default Table;
+
