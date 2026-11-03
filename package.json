@@ -1,0 +1,13 @@
+{
+  "name": "looplayer-backend-workspace",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "postinstall": "cd server && npm install",
+    "start": "npm start --prefix server",
+    "dev": "npm run dev --prefix server",
+    "test": "npm test --prefix server"
+  }
+}
+
