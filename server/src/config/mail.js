@@ -3,15 +3,26 @@ import env from './env.js';
 import logger from '../utils/logger.js';
 
 /**
+ * Normalizes Zoho SMTP host.
+ * Accounts registered on Zoho India/International fail on smtp.zoho.com with 535 or timeouts.
+ */
+export const resolveZohoHost = (configuredHost) => {
+  if (!configuredHost || configuredHost === 'smtp.zoho.com') {
+    return 'smtp.zoho.in';
+  }
+  return configuredHost;
+};
+
+/**
  * Global SMTP diagnostic state tracker for Admin Dashboard settings
  */
 export const smtpDiagnostics = {
   status: 'Unverified', // 'SMTP Connected' | 'SMTP Failed' | 'Unverified'
   lastVerificationTime: null,
   lastError: null,
-  host: env.SMTP.HOST,
-  port: Number(env.SMTP.PORT),
-  secure: env.SMTP.SECURE,
+  host: resolveZohoHost(env.SMTP.HOST),
+  port: Number(env.SMTP.PORT) || 465,
+  secure: (Number(env.SMTP.PORT) || 465) === 465,
   user: env.SMTP.USER,
 };
 
@@ -22,6 +33,7 @@ export const smtpDiagnostics = {
  * - Port 587 with STARTTLS (secure: false, requireTLS: true)
  */
 export const createMailTransporter = () => {
+  const host = resolveZohoHost(env.SMTP.HOST);
   const port = Number(env.SMTP.PORT) || 465;
   const isPort465 = port === 465;
   // Enforce correct SSL/TLS mode to eliminate ssl3_get_record:wrong version number
@@ -30,9 +42,12 @@ export const createMailTransporter = () => {
   const secure = isPort465;
 
   const transportConfig = {
-    host: env.SMTP.HOST,
-    port: port,
-    secure: secure,
+    host,
+    port,
+    secure,
+    connectionTimeout: 10000,
+    greetingTimeout: 10000,
+    socketTimeout: 20000,
     auth: {
       user: env.SMTP.USER,
       pass: env.SMTP.PASS,
@@ -41,7 +56,6 @@ export const createMailTransporter = () => {
     maxConnections: 5,
     maxMessages: 100,
     rateLimit: 10, // Max 10 messages/sec to adhere to Zoho sending thresholds
-    socketTimeout: 30000,
     tls: {
       rejectUnauthorized: env.NODE_ENV === 'production',
     },
@@ -112,12 +126,14 @@ export const getSMTPDiagnostics = () => {
     return `${masked}@${parts[1]}`;
   };
 
+  const activePort = Number(env.SMTP.PORT) || 465;
+
   return {
     status: smtpDiagnostics.status,
     lastVerificationTime: smtpDiagnostics.lastVerificationTime,
-    host: env.SMTP.HOST,
-    port: Number(env.SMTP.PORT),
-    secure: env.SMTP.SECURE,
+    host: resolveZohoHost(env.SMTP.HOST),
+    port: activePort,
+    secure: activePort === 465,
     user: maskEmail(env.SMTP.USER),
     fromName: env.SMTP.FROM_NAME,
     fromEmail: env.SMTP.FROM_EMAIL,
