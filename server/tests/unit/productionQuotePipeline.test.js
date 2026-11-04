@@ -89,3 +89,4 @@ test('File Upload Specs - Max 10 files and 20MB limit enforced in config', () =>
   assert.equal(env.UPLOAD.MAX_FILE_COUNT, 10);
   assert.equal(env.UPLOAD.MAX_FILE_SIZE_MB, 20);
 });
+
