@@ -3,6 +3,22 @@ import assert from 'node:assert/strict';
 import request from 'supertest';
 import app from '../../src/app.js';
 
+test('Integration - CORS allows https://www.looplayerdesign.com and vercel previews', async () => {
+  const res1 = await request(app)
+    .options('/api/quote')
+    .set('Origin', 'https://www.looplayerdesign.com')
+    .set('Access-Control-Request-Method', 'POST');
+  assert.equal(res1.status, 204);
+  assert.equal(res1.headers['access-control-allow-origin'], 'https://www.looplayerdesign.com');
+
+  const res2 = await request(app)
+    .options('/api/quote')
+    .set('Origin', 'https://looplayer-frontend.vercel.app')
+    .set('Access-Control-Request-Method', 'POST');
+  assert.equal(res2.status, 204);
+  assert.equal(res2.headers['access-control-allow-origin'], 'https://looplayer-frontend.vercel.app');
+});
+
 test('Integration - GET / returns 200 operational welcome payload', async () => {
   const res = await request(app).get('/');
   assert.equal(res.status, 200);

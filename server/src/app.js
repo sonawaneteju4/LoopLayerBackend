@@ -50,13 +50,41 @@ app.use(
 // ==========================================
 // 2. CORS CONFIGURATION
 // ==========================================
+const isOriginAllowed = (origin) => {
+  // Allow requests with no origin (like mobile apps, curl, server-to-server)
+  if (!origin) return true;
+
+  // 1. Direct match with configured ALLOWED_ORIGINS
+  if (env.ALLOWED_ORIGINS.includes('*') || env.ALLOWED_ORIGINS.includes(origin)) {
+    return true;
+  }
+
+  // 2. Robust domain matching (both looplayerdesign.com and looplayerdesing.com with or without www, plus vercel.app and localhost)
+  try {
+    const parsed = new URL(origin);
+    const hostname = parsed.hostname.toLowerCase();
+
+    if (
+      hostname === 'looplayerdesign.com' ||
+      hostname.endsWith('.looplayerdesign.com') ||
+      hostname === 'looplayerdesing.com' ||
+      hostname.endsWith('.looplayerdesing.com') ||
+      hostname.endsWith('.vercel.app') ||
+      hostname === 'localhost' ||
+      hostname === '127.0.0.1'
+    ) {
+      return true;
+    }
+  } catch {
+    return false;
+  }
+
+  return false;
+};
+
 const corsOptions = {
   origin: (origin, callback) => {
-    // Allow requests with no origin (like mobile apps, curl, server-to-server)
-    if (!origin) return callback(null, true);
-
-    const allowed = env.ALLOWED_ORIGINS;
-    if (allowed.includes('*') || allowed.includes(origin)) {
+    if (isOriginAllowed(origin)) {
       callback(null, true);
     } else {
       callback(new Error(`Origin '${origin}' not allowed by CORS`));

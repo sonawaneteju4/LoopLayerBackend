@@ -43,6 +43,8 @@ export const env = {
   ALLOWED_ORIGINS: process.env.ALLOWED_ORIGINS
     ? process.env.ALLOWED_ORIGINS.split(',').map((o) => o.trim())
     : [
+        'https://looplayerdesign.com',
+        'https://www.looplayerdesign.com',
         'https://looplayerdesing.com',
         'https://www.looplayerdesing.com',
         'http://localhost:3000',

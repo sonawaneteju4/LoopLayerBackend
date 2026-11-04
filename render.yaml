@@ -15,7 +15,7 @@ services:
       - key: CLIENT_URL
         value: https://looplayerdesing.com
       - key: ALLOWED_ORIGINS
-        value: https://looplayerdesing.com,https://www.looplayerdesing.com,http://localhost:3000
+        value: https://looplayerdesign.com,https://www.looplayerdesign.com,https://looplayerdesing.com,https://www.looplayerdesing.com,http://localhost:3000,http://localhost:5173
       - key: MONGODB_URI
         sync: false
       - key: JWT_SECRET
