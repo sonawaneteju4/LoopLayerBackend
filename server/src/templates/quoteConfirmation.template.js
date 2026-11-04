@@ -67,17 +67,17 @@ export const renderQuoteConfirmation = (quote) => {
     </h1>
 
     <p style="font-size: 15px; color: #334155; line-height: 24px; margin: 0 0 14px 0;">
-      Thank you for choosing <strong>LoopLayer Designs</strong>. We've successfully received your project details and uploaded artwork.
+      <strong>Thank you for submitting your request.</strong> We have successfully received your project requirements and uploaded artwork.
     </p>
 
     <p style="font-size: 15px; color: #334155; line-height: 24px; margin: 0 0 20px 0;">
-      Our embroidery specialists and vector artists will carefully review your request and get back to you with an accurate estimate within <strong>one business day</strong>.
+      Our embroidery digitizing specialists and vector artists will carefully review your project details and get back to you within one business day.
     </p>
 
     <!-- Project Specifications Table -->
     <div style="margin: 24px 0 12px 0;">
       <div style="font-size: 13px; font-weight: 700; color: #0F172A; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;">
-        Project Summary
+        Order Summary
       </div>
       ${Table(specRows)}
     </div>
@@ -87,7 +87,7 @@ export const renderQuoteConfirmation = (quote) => {
         ? InfoCard(
             `
           <div style="font-size: 12px; font-weight: 700; color: #0F172A; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;">
-            Your Project Requirements
+            Project Requirements
           </div>
           <div style="font-size: 14px; color: #334155; line-height: 22px; white-space: pre-wrap;">
             ${quote.projectRequirements}
@@ -98,9 +98,21 @@ export const renderQuoteConfirmation = (quote) => {
         : ''
     }
 
-    <p style="font-size: 14px; color: #64748B; line-height: 22px; margin: 20px 0 24px 0;">
-      If you need to make changes or provide additional high-resolution assets, reply directly to this email referencing your Request ID <strong>${requestId}</strong>.
-    </p>
+    <!-- Business Hours & Contact Information Card -->
+    <div style="background-color: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px; padding: 16px 20px; margin: 24px 0 20px 0;">
+      <div style="font-size: 13px; font-weight: 700; color: #0F172A; margin-bottom: 8px;">
+        Support & Business Hours
+      </div>
+      <p style="font-size: 13px; color: #475569; line-height: 20px; margin: 0 0 6px 0;">
+        <strong>Business Hours:</strong> Monday – Saturday: 9:00 AM – 7:00 PM IST
+      </p>
+      <p style="font-size: 13px; color: #475569; line-height: 20px; margin: 0 0 6px 0;">
+        <strong>Contact:</strong> orders@looplayerdesign.com | Nagpur, Maharashtra, India
+      </p>
+      <p style="font-size: 12px; color: #94A3B8; line-height: 18px; margin: 10px 0 0 0; padding-top: 10px; border-top: 1px dashed #CBD5E1;">
+        <strong>No Reply:</strong> This is an automated notification from a no-reply address. For updates, reach our production team directly at orders@looplayerdesign.com referencing Order ID <strong>${requestId}</strong>.
+      </p>
+    </div>
 
     ${PrimaryButton('Visit Website', websiteUrl, 'center')}
 

@@ -19,13 +19,20 @@ export const renderQuoteNotification = (quote) => {
   const customerName = `${quote.customer?.firstName || ''} ${quote.customer?.lastName || ''}`.trim() || 'Guest';
   const requestId = quote.requestId || 'LLD-2026-000001';
   const service = quote.service || 'Embroidery Digitizing';
-  const dashboardUrl = `${env.CLIENT_URL || 'https://looplayerdesing.com'}/admin/quotes/${quote._id || requestId}`;
+  const timestamp = quote.createdAt ? new Date(quote.createdAt).toISOString() : new Date().toISOString();
+  const formattedTime = new Date(timestamp).toLocaleString('en-US', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+    timeZone: 'Asia/Kolkata',
+  }) + ' IST';
+  const dashboardUrl = `${env.CLIENT_URL || 'https://looplayerdesign.com'}/admin/quotes/${quote._id || requestId}`;
 
   const subject = `New Quote Request — ${requestId}`;
 
   const detailRows = [
-    { label: 'Request ID', value: requestId, isHighlighted: true },
-    { label: 'Customer', value: customerName },
+    { label: 'Order ID', value: requestId, isHighlighted: true },
+    { label: 'Timestamp', value: `${formattedTime} (${timestamp})` },
+    { label: 'Customer Name', value: customerName },
     { label: 'Email', value: quote.customer?.email || '-' },
     { label: 'Phone', value: quote.customer?.phone || '-' },
     { label: 'Country', value: quote.customer?.country || '-' },
@@ -39,17 +46,20 @@ export const renderQuoteNotification = (quote) => {
     });
   }
 
-  // Uploaded files list
+  // Uploaded files list (check both quote.files and quote.uploadedFiles)
+  const allFiles = quote.files?.length > 0 ? quote.files : quote.uploadedFiles || [];
   let filesHtml = '<p style="font-size: 13px; color: #64748B; font-style: italic; margin: 0;">No files attached.</p>';
-  if (quote.uploadedFiles && quote.uploadedFiles.length > 0) {
-    const listItems = quote.uploadedFiles
+  if (allFiles && allFiles.length > 0) {
+    const listItems = allFiles
       .map(
         (f) => `
-        <li style="margin-bottom: 6px; font-size: 13px; line-height: 20px;">
+        <li style="margin-bottom: 8px; font-size: 13px; line-height: 20px;">
           <a href="${f.url}" target="_blank" rel="noopener noreferrer" style="color: #2563EB; font-weight: 600; text-decoration: underline;">
-            ${f.originalName}
+            ${f.filename || f.originalName}
           </a>
-          <span style="color: #94A3B8;">(${Math.round(f.fileSize / 1024)} KB, ${f.format || f.resourceType})</span>
+          <span style="color: #64748B;"> &bull; ${Math.round((f.size || f.fileSize || 0) / 1024)} KB &bull; Type: ${f.type || f.mime || f.format || 'file'}</span>
+          <br />
+          <span style="font-size: 11px; color: #94A3B8;">Cloudinary: <a href="${f.url}" target="_blank" style="color: #64748B;">${f.url}</a></span>
         </li>
       `
       )
@@ -121,7 +131,8 @@ export const renderQuoteNotification = (quote) => {
   });
 
   const text = `
-New Quote Request: ${requestId}
+New Quote Request / Order ID: ${requestId}
+Timestamp: ${timestamp}
 Service: ${service}
 Customer: ${customerName}
 Email: ${quote.customer?.email || '-'}
@@ -131,7 +142,9 @@ Country: ${quote.customer?.country || '-'}
 Requirements:
 ${quote.projectRequirements || 'None'}
 
-Files: ${quote.uploadedFiles?.length || 0} attached.
+Files: ${allFiles.length} attached.
+${allFiles.map((f, i) => `${i + 1}. ${f.filename || f.originalName} (${Math.round((f.size || f.fileSize || 0) / 1024)} KB) - ${f.url}`).join('\n')}
+
 Open Dashboard: ${dashboardUrl}
   `.trim();
 

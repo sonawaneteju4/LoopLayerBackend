@@ -35,32 +35,54 @@ export const createQuote = async (quoteData, files = []) => {
     uploadedFilesMetadata = await cloudinaryService.uploadMultipleFiles(files);
   }
 
-  // 3. Assemble Quote Document
+  // 3. Normalize Name (handles name or firstName/lastName)
+  const fullName = quoteData.name || `${quoteData.firstName || ''} ${quoteData.lastName || ''}`.trim();
+  const nameParts = fullName.split(' ');
+  const firstName = quoteData.firstName || nameParts[0] || 'Valued';
+  const lastName = quoteData.lastName || nameParts.slice(1).join(' ') || 'Customer';
+
+  // 4. Map uploaded files to schema
+  const formattedFiles = uploadedFilesMetadata.map((f) => ({
+    filename: f.fileName || f.originalName,
+    originalName: f.fileName || f.originalName,
+    url: f.url,
+    size: f.size || f.fileSize,
+    fileSize: f.size || f.fileSize,
+    type: f.mime || f.type || f.format,
+    mime: f.mime || f.type || f.format,
+    cloudinaryId: f.publicId,
+    publicId: f.publicId,
+    format: f.format,
+    resourceType: f.resourceType || 'raw',
+  }));
+
+  // 5. Assemble Quote Document
   const quote = new Quote({
     requestId,
     customer: {
-      firstName: quoteData.firstName,
-      lastName: quoteData.lastName,
+      firstName,
+      lastName,
       email: quoteData.email.toLowerCase().trim(),
       phone: quoteData.phone,
       country: quoteData.country,
     },
-    service: quoteData.service,
+    service: quoteData.service || 'Embroidery Digitizing',
     dimensions: {
       width: quoteData.width ? Number(quoteData.width) : null,
       height: quoteData.height ? Number(quoteData.height) : null,
       unit: quoteData.unit || 'in',
     },
-    projectRequirements: quoteData.projectRequirements,
-    uploadedFiles: uploadedFilesMetadata,
+    projectRequirements: quoteData.projectRequirements || 'Customer project specifications submitted via website.',
+    uploadedFiles: formattedFiles,
+    files: formattedFiles,
     status: 'Pending',
   });
 
   const savedQuote = await quote.save();
 
-  logUpload(requestId, uploadedFilesMetadata.length, uploadedFilesMetadata);
+  logUpload(requestId, formattedFiles.length, formattedFiles);
 
-  // 4. Send non-blocking notification emails
+  // 6. Send non-blocking notification emails
   // Customer confirmation
   mailService
     .sendQuoteConfirmationToCustomer(savedQuote)
@@ -269,6 +291,42 @@ export const streamQuoteFilesZip = async (idOrRequestId, res) => {
 };
 
 /**
+ * Streams a single uploaded file belonging to a quote directly to the client
+ */
+export const streamSingleQuoteFile = async (idOrRequestId, fileIdentifier, res) => {
+  const quote = await findQuoteByIdOrRequestId(idOrRequestId);
+  if (!quote) {
+    throw ApiError.notFound(`Quote request '${idOrRequestId}' not found`);
+  }
+
+  const allFiles = quote.files?.length > 0 ? quote.files : quote.uploadedFiles || [];
+  if (allFiles.length === 0) {
+    throw ApiError.notFound(`Quote '${quote.requestId}' has no uploaded files to download`);
+  }
+
+  // Find file by _id, publicId, cloudinaryId, or filename
+  const targetFile = allFiles.find(
+    (f) =>
+      f._id?.toString() === fileIdentifier ||
+      f.publicId === fileIdentifier ||
+      f.cloudinaryId === fileIdentifier ||
+      f.filename === fileIdentifier ||
+      f.originalName === fileIdentifier
+  );
+
+  if (!targetFile) {
+    throw ApiError.notFound(`File '${fileIdentifier}' not found on quote '${quote.requestId}'`);
+  }
+
+  const filename = targetFile.filename || targetFile.originalName || 'downloaded-file';
+  res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+  res.setHeader('Content-Type', targetFile.type || targetFile.mime || 'application/octet-stream');
+
+  const fileStream = await cloudinaryService.getFileStream(targetFile.url);
+  fileStream.pipe(res);
+};
+
+/**
  * Send an email directly to the customer from the dashboard and record in Quote email history
  */
 export const sendCustomerReply = async (idOrRequestId, { subject, message, attachments = [], sentBy = 'Admin' }) => {
@@ -313,6 +371,7 @@ export default {
   updateQuote,
   deleteQuote,
   streamQuoteFilesZip,
+  streamSingleQuoteFile,
   sendCustomerReply,
 };
 

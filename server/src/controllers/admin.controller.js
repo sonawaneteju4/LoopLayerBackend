@@ -122,6 +122,18 @@ export const deleteQuote = async (req, res, next) => {
 };
 
 /**
+ * Download a single file belonging to a quote
+ */
+export const downloadSingleQuoteFile = async (req, res, next) => {
+  try {
+    const { id, fileId } = req.params;
+    await quoteService.streamSingleQuoteFile(id, fileId, res);
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
  * Download all files belonging to a quote as a ZIP archive
  */
 export const downloadQuoteZip = async (req, res, next) => {
@@ -249,6 +261,7 @@ export default {
   getQuoteDetails,
   updateQuote,
   deleteQuote,
+  downloadSingleQuoteFile,
   downloadQuoteZip,
   replyToQuoteCustomer,
   getContactsList,

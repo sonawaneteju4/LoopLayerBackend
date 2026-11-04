@@ -7,16 +7,27 @@ import { sendSuccess } from '../utils/response.js';
 export const submitQuote = async (req, res, next) => {
   try {
     const quote = await quoteService.createQuote(req.body, req.files);
+
+    const formattedFiles = (quote.files || quote.uploadedFiles || []).map((f) => ({
+      fileName: f.filename || f.originalName,
+      url: f.url,
+      size: f.size || f.fileSize,
+      mime: f.type || f.mime,
+      publicId: f.cloudinaryId || f.publicId,
+    }));
+
     return sendSuccess(
       res,
       201,
       'Your quote request has been submitted successfully. A confirmation email has been sent.',
       {
+        orderId: quote.requestId,
         requestId: quote.requestId,
         status: quote.status,
         service: quote.service,
         createdAt: quote.createdAt,
-        fileCount: quote.uploadedFiles.length,
+        fileCount: formattedFiles.length,
+        files: formattedFiles,
       }
     );
   } catch (error) {

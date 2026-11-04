@@ -82,6 +82,13 @@ test('Integration - POST /api/contact validation rejects empty body', async () =
   assert.ok(res.body.errors.length > 0);
 });
 
+test('Integration - POST /api/quote rejects submission with missing files and fields', async () => {
+  const res = await request(app).post('/api/quote').send({});
+  assert.equal(res.status, 422);
+  assert.equal(res.body.success, false);
+  assert.ok(res.body.errors.length > 0);
+});
+
 test('Integration - POST /api/auth/login validation rejects empty credentials', async () => {
   const res = await request(app).post('/api/auth/login').send({});
   assert.equal(res.status, 422);

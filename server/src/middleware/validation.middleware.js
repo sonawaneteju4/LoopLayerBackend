@@ -46,21 +46,38 @@ export const sanitizeRichText = (dirtyHtml) => {
 
 /**
  * Validation rules for submitting a Quote request
+ * Strictly validates: Country (required), Name (required), Email (required/valid),
+ * Phone (required), and minimum one file upload.
  */
 export const quoteValidationRules = [
-  body('firstName')
+  body('name')
+    .optional()
     .trim()
-    .notEmpty()
-    .withMessage('First name is required')
+    .isLength({ max: 120 })
+    .withMessage('Name cannot exceed 120 characters'),
+
+  body('firstName')
+    .optional()
+    .trim()
     .isLength({ max: 60 })
     .withMessage('First name cannot exceed 60 characters'),
 
   body('lastName')
+    .optional()
     .trim()
-    .notEmpty()
-    .withMessage('Last name is required')
     .isLength({ max: 60 })
     .withMessage('Last name cannot exceed 60 characters'),
+
+  // Enforce name requirement (either name or firstName)
+  body().custom((reqBody) => {
+    const hasName =
+      (reqBody.name && reqBody.name.trim().length > 0) ||
+      (reqBody.firstName && reqBody.firstName.trim().length > 0);
+    if (!hasName) {
+      throw new Error('Name is required');
+    }
+    return true;
+  }),
 
   body('email')
     .trim()
@@ -75,21 +92,19 @@ export const quoteValidationRules = [
     .notEmpty()
     .withMessage('Phone number is required')
     .isLength({ max: 30 })
-    .withMessage('Phone number is too long'),
+    .withMessage('Phone number cannot exceed 30 characters'),
 
   body('country')
     .trim()
     .notEmpty()
     .withMessage('Country is required')
     .isLength({ max: 80 })
-    .withMessage('Country name is too long'),
+    .withMessage('Country name cannot exceed 80 characters'),
 
   body('service')
+    .optional()
     .trim()
-    .notEmpty()
-    .withMessage('Service selection is required')
-    .isLength({ max: 100 })
-    .withMessage('Service name is too long'),
+    .isLength({ max: 100 }),
 
   body('width')
     .optional({ checkFalsy: true })
@@ -110,11 +125,17 @@ export const quoteValidationRules = [
     .withMessage('Unit must be one of: in, cm, mm, px'),
 
   body('projectRequirements')
+    .optional()
     .trim()
-    .notEmpty()
-    .withMessage('Project requirements cannot be empty')
-    .isLength({ max: 5000 })
-    .withMessage('Project requirements cannot exceed 5000 characters'),
+    .isLength({ max: 5000 }),
+
+  // Enforce minimum one file upload
+  body().custom((val, { req }) => {
+    if (!req.files || !Array.isArray(req.files) || req.files.length === 0) {
+      throw new Error('Minimum one file upload is required');
+    }
+    return true;
+  }),
 ];
 
 /**

@@ -2,9 +2,12 @@ import mongoose from 'mongoose';
 
 const uploadedFileSchema = new mongoose.Schema(
   {
-    publicId: {
+    filename: {
       type: String,
-      required: true,
+      trim: true,
+    },
+    originalName: {
+      type: String,
       trim: true,
     },
     url: {
@@ -12,14 +15,27 @@ const uploadedFileSchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
-    originalName: {
-      type: String,
-      required: true,
-      trim: true,
+    size: {
+      type: Number,
     },
     fileSize: {
       type: Number,
-      required: true, // in bytes
+    },
+    type: {
+      type: String,
+      trim: true,
+    },
+    mime: {
+      type: String,
+      trim: true,
+    },
+    cloudinaryId: {
+      type: String,
+      trim: true,
+    },
+    publicId: {
+      type: String,
+      trim: true,
     },
     format: {
       type: String,
@@ -27,7 +43,7 @@ const uploadedFileSchema = new mongoose.Schema(
     },
     resourceType: {
       type: String,
-      default: 'image',
+      default: 'raw',
       trim: true,
     },
   },
@@ -159,6 +175,7 @@ const quoteSchema = new mongoose.Schema(
       trim: true,
     },
     uploadedFiles: [uploadedFileSchema],
+    files: [uploadedFileSchema],
     status: {
       type: String,
       enum: ['Pending', 'Reviewing', 'In Progress', 'Completed', 'Rejected'],

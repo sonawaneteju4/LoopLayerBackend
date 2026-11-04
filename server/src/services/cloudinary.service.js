@@ -12,7 +12,7 @@ import { ApiError } from '../utils/response.js';
  */
 export const getResourceType = (filename = '') => {
   const ext = path.extname(filename).toLowerCase().replace('.', '');
-  const imageExtensions = ['jpg', 'jpeg', 'png', 'svg', 'webp'];
+  const imageExtensions = ['jpg', 'jpeg', 'png', 'svg', 'webp', 'tiff', 'tif'];
 
   if (imageExtensions.includes(ext)) {
     return 'image';
@@ -49,10 +49,15 @@ export const uploadFile = async (file, customFolder = null) => {
     const result = await cloudinary.uploader.upload(file.path, uploadOptions);
 
     return {
-      publicId: result.public_id,
-      url: result.secure_url,
+      fileName: file.originalname,
       originalName: file.originalname,
+      url: result.secure_url,
+      size: file.size,
       fileSize: file.size,
+      mime: file.mimetype || `application/${ext}`,
+      type: file.mimetype || `application/${ext}`,
+      publicId: result.public_id,
+      cloudinaryId: result.public_id,
       format: result.format || ext,
       resourceType: result.resource_type || resourceType,
     };

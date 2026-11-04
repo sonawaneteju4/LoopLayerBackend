@@ -9,6 +9,7 @@ import env from './config/env.js';
 import logger, { morganStream } from './utils/logger.js';
 import { sendSuccess } from './utils/response.js';
 import { globalLimiter } from './middleware/rateLimiter.middleware.js';
+import { mongoSanitize, xssClean } from './middleware/sanitization.middleware.js';
 import { errorHandler, notFoundHandler } from './middleware/error.middleware.js';
 import authenticateAdmin from './middleware/auth.middleware.js';
 import adminController from './controllers/admin.controller.js';
@@ -104,6 +105,8 @@ app.use(compression());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(hpp()); // Prevent HTTP Parameter Pollution
+app.use(mongoSanitize); // Prevent NoSQL Injection attacks ($ operators and dots)
+app.use(xssClean); // Clean malicious XSS injection scripts
 
 // ==========================================
 // 4. REQUEST LOGGING (Morgan + Winston)
@@ -157,6 +160,7 @@ quotesRouter.get('/:id', adminController.getQuoteDetails);
 quotesRouter.patch('/:id', updateQuoteStatusValidationRules, validate, adminController.updateQuote);
 quotesRouter.delete('/:id', adminController.deleteQuote);
 quotesRouter.get('/:id/download-zip', adminController.downloadQuoteZip);
+quotesRouter.get('/:id/files/:fileId/download', adminController.downloadSingleQuoteFile);
 quotesRouter.post('/:id/reply', replyQuoteValidationRules, validate, adminController.replyToQuoteCustomer);
 app.use('/quotes', quotesRouter);
 

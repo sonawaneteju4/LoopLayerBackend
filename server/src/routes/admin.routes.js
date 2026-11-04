@@ -71,6 +71,12 @@ router.delete('/quotes/:id', adminController.deleteQuote);
 router.get('/quotes/:id/download-zip', adminController.downloadQuoteZip);
 
 /**
+ * @route   GET /api/admin/quotes/:id/files/:fileId/download
+ * @desc    Download a single uploaded file
+ */
+router.get('/quotes/:id/files/:fileId/download', adminController.downloadSingleQuoteFile);
+
+/**
  * @route   POST /api/admin/quotes/:id/reply
  * @desc    Send direct email reply to customer and log to email history
  */

@@ -49,8 +49,11 @@ test('Email Template - Customer Quote Confirmation formatting & content', () => 
 
   assert.equal(result.subject, "We've Received Your Project Request [LLD-2026-000042]");
   assert.ok(result.html.includes('Hello Marcus,'));
+  assert.ok(result.html.includes('Thank you for submitting your request'));
   assert.ok(result.html.includes('LLD-2026-000042'));
   assert.ok(result.html.includes('Embroidery Digitizing'));
+  assert.ok(result.html.includes('Business Hours'));
+  assert.ok(result.html.includes('No Reply'));
   assert.ok(result.html.includes('Visit Website'));
   assert.ok(result.html.includes('Nagpur, Maharashtra'));
   assert.ok(result.html.includes(env.SMTP.FROM_EMAIL));
@@ -69,6 +72,8 @@ test('Email Template - Admin Quote Notification formatting & specs', () => {
   assert.ok(result.html.includes('+1 555-0142'));
   assert.ok(result.html.includes('United States'));
   assert.ok(result.html.includes('company_logo.dst'));
+  assert.ok(result.html.includes('https://res.cloudinary.com/demo/raw/upload/v1/sample.dst'));
+  assert.ok(result.html.includes('Order ID'));
   assert.ok(result.html.includes('Open In Dashboard'));
 });
 

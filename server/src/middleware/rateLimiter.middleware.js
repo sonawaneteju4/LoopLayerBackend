@@ -10,7 +10,7 @@ const createLimitHandler = (message) => (req, res) => {
   res.status(429).json({
     success: false,
     message,
-    errors: ['Rate limit exceeded. Please wait before attempting again.'],
+    errors: ['Rate limit exceeded. Maximum 20 requests per 15 minutes.'],
   });
 };
 

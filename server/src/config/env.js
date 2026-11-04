@@ -81,8 +81,8 @@ export const env = {
     FROM_EMAIL: process.env.FROM_EMAIL || 'orders@looplayerdesing.com',
     FROM:
       process.env.SMTP_FROM ||
-      `"${process.env.FROM_NAME || 'LoopLayer Designs'}" <${process.env.FROM_EMAIL || 'orders@looplayerdesing.com'}>`,
-    ADMIN_EMAIL: process.env.ADMIN_NOTIFICATION_EMAIL || 'orders@looplayerdesing.com',
+      `"${process.env.FROM_NAME || 'LoopLayer Designs'}" <${process.env.FROM_EMAIL || 'orders@looplayerdesign.com'}>`,
+    ADMIN_EMAIL: process.env.ADMIN_NOTIFICATION_EMAIL || 'orders@looplayerdesign.com',
   },
 
   // HTTP Email API (Bypasses Render Free Tier SMTP port blocking over HTTPS port 443)
@@ -90,23 +90,32 @@ export const env = {
   RESEND_FROM:
     process.env.RESEND_FROM ||
     process.env.SMTP_FROM ||
-    `"${process.env.FROM_NAME || 'LoopLayer Designs'}" <${process.env.FROM_EMAIL || 'orders@looplayerdesing.com'}>`,
+    `"${process.env.FROM_NAME || 'LoopLayer Designs'}" <${process.env.FROM_EMAIL || 'orders@looplayerdesign.com'}>`,
 
   // Upload limits
   UPLOAD: {
     MAX_FILE_SIZE_MB: parseInt(process.env.MAX_FILE_SIZE_MB, 10) || 20,
     MAX_FILE_COUNT: parseInt(process.env.MAX_FILE_COUNT, 10) || 10,
     ALLOWED_EXTENSIONS: [
-      'jpg',
-      'jpeg',
-      'png',
+      'dst',
+      'emb',
+      'pes',
+      'exp',
+      'jef',
+      'vp3',
+      'hus',
       'pdf',
       'ai',
       'eps',
       'svg',
-      'dst',
-      'pes',
+      'png',
+      'jpg',
+      'jpeg',
+      'psd',
       'zip',
+      'rar',
+      'tiff',
+      'tif',
     ],
   },
 
@@ -114,10 +123,10 @@ export const env = {
   RATE_LIMIT: {
     GLOBAL_WINDOW_MS: 15 * 60 * 1000, // 15 minutes
     GLOBAL_MAX: parseInt(process.env.RATE_LIMIT_GLOBAL_MAX, 10) || 300,
-    PUBLIC_WINDOW_MS: 60 * 60 * 1000, // 1 hour
-    PUBLIC_MAX: parseInt(process.env.RATE_LIMIT_PUBLIC_MAX, 10) || 10,
+    PUBLIC_WINDOW_MS: 15 * 60 * 1000, // 15 minutes
+    PUBLIC_MAX: parseInt(process.env.RATE_LIMIT_PUBLIC_MAX, 10) || 20, // 20 requests per 15 mins
     AUTH_WINDOW_MS: 15 * 60 * 1000, // 15 minutes
-    AUTH_MAX: parseInt(process.env.RATE_LIMIT_AUTH_MAX, 10) || 5,
+    AUTH_MAX: parseInt(process.env.RATE_LIMIT_AUTH_MAX, 10) || 20,
   },
 };
 
