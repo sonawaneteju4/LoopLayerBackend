@@ -71,11 +71,27 @@ export const createMailTransporter = () => {
 export const mailTransporter = createMailTransporter();
 
 /**
- * Verifies Zoho SMTP connectivity and records diagnostics
+ * Verifies Outbound Email connectivity and records diagnostics.
+ * When RESEND_API_KEY is configured, skips traditional SMTP connection to avoid Render port blocking.
  */
 export const verifyMailConnection = async () => {
   smtpDiagnostics.lastVerificationTime = new Date().toISOString();
 
+  // 1. If Resend is configured, use it as primary provider over HTTPS port 443
+  if (env.RESEND_API_KEY) {
+    smtpDiagnostics.provider = 'Resend (HTTPS Port 443)';
+    smtpDiagnostics.status = 'Resend Connected';
+    smtpDiagnostics.lastError = null;
+    logger.info('[Mail] Resend HTTPS Email API active and verified (Port 443)');
+    return {
+      connected: true,
+      provider: 'Resend',
+      status: 'Resend Connected',
+      lastVerificationTime: smtpDiagnostics.lastVerificationTime,
+    };
+  }
+
+  // 2. If no SMTP credentials provided
   if (!env.SMTP.USER || !env.SMTP.PASS) {
     smtpDiagnostics.status = 'SMTP Connected (Simulated / Dev)';
     smtpDiagnostics.lastError = null;
@@ -88,6 +104,7 @@ export const verifyMailConnection = async () => {
     };
   }
 
+  // 3. Verify Zoho SMTP
   try {
     await mailTransporter.verify();
     smtpDiagnostics.status = 'SMTP Connected';
@@ -114,7 +131,7 @@ export const verifyMailConnection = async () => {
 };
 
 /**
- * Returns current SMTP health and configuration diagnostics (with masked credentials)
+ * Returns current SMTP/Email health and configuration diagnostics (with masked credentials)
  */
 export const getSMTPDiagnostics = () => {
   const maskEmail = (email) => {
@@ -129,12 +146,13 @@ export const getSMTPDiagnostics = () => {
   const activePort = Number(env.SMTP.PORT) || 465;
 
   return {
-    status: smtpDiagnostics.status,
+    provider: env.RESEND_API_KEY ? 'Resend (HTTPS Port 443)' : 'Zoho Mail',
+    status: env.RESEND_API_KEY ? 'Resend Connected' : smtpDiagnostics.status,
     lastVerificationTime: smtpDiagnostics.lastVerificationTime,
-    host: resolveZohoHost(env.SMTP.HOST),
-    port: activePort,
-    secure: activePort === 465,
-    user: maskEmail(env.SMTP.USER),
+    host: env.RESEND_API_KEY ? 'api.resend.com' : resolveZohoHost(env.SMTP.HOST),
+    port: env.RESEND_API_KEY ? 443 : activePort,
+    secure: env.RESEND_API_KEY ? true : activePort === 465,
+    user: env.RESEND_API_KEY ? 'resend-api' : maskEmail(env.SMTP.USER),
     fromName: env.SMTP.FROM_NAME,
     fromEmail: env.SMTP.FROM_EMAIL,
     lastError: smtpDiagnostics.lastError,

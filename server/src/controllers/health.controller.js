@@ -109,7 +109,7 @@ export const getHealth = async (req, res) => {
         name: mongoose.connection.name || 'Unknown',
       },
       smtp: {
-        provider: 'Zoho Mail',
+        provider: smtpDiagnostics.provider || (env.RESEND_API_KEY ? 'Resend (HTTPS Port 443)' : 'Zoho Mail'),
         status: smtpDiagnostics.status,
         host: smtpDiagnostics.host,
         port: smtpDiagnostics.port,
