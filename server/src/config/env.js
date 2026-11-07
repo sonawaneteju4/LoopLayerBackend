@@ -39,7 +39,7 @@ if (isProduction) {
 export const env = {
   NODE_ENV: process.env.NODE_ENV || 'development',
   PORT: parseInt(process.env.PORT, 10) || 5000,
-  CLIENT_URL: process.env.CLIENT_URL || 'https://looplayerdesing.com',
+  CLIENT_URL: process.env.CLIENT_URL || 'https://looplayerdesign.com',
   ALLOWED_ORIGINS: process.env.ALLOWED_ORIGINS
     ? process.env.ALLOWED_ORIGINS.split(',').map((o) => o.trim())
     : [
@@ -78,7 +78,7 @@ export const env = {
     USER: process.env.SMTP_USER || '',
     PASS: process.env.SMTP_PASS || '',
     FROM_NAME: process.env.FROM_NAME || 'LoopLayer Designs',
-    FROM_EMAIL: process.env.FROM_EMAIL || 'orders@looplayerdesing.com',
+    FROM_EMAIL: process.env.FROM_EMAIL || 'orders@looplayerdesign.com',
     FROM:
       process.env.SMTP_FROM ||
       `"${process.env.FROM_NAME || 'LoopLayer Designs'}" <${process.env.FROM_EMAIL || 'orders@looplayerdesign.com'}>`,
@@ -91,6 +91,7 @@ export const env = {
     process.env.RESEND_FROM ||
     process.env.SMTP_FROM ||
     `"${process.env.FROM_NAME || 'LoopLayer Designs'}" <${process.env.FROM_EMAIL || 'orders@looplayerdesign.com'}>`,
+  ENABLE_SMTP_FALLBACK: process.env.ENABLE_SMTP_FALLBACK === 'true',
 
   // Upload limits
   UPLOAD: {

@@ -152,7 +152,25 @@ export const sendMail = async ({
         emailLogId: logRecord?._id,
       };
     } catch (httpError) {
-      logger.warn(`[Mail:Resend] HTTPS dispatch error: ${httpError.message}. Retrying via Zoho SMTP...`);
+      logger.error(`[Mail:Resend] HTTPS dispatch error: ${httpError.message}`);
+      // Render Free / Standard blocks outbound SMTP ports 25, 465, 587 at the network firewall.
+      // Falling back to Zoho SMTP guarantees a 30s connection timeout that masks the real Resend error.
+      // Therefore, unless explicitly enabled via ENABLE_SMTP_FALLBACK=true, fail fast with actionable Resend error.
+      if (!env.ENABLE_SMTP_FALLBACK) {
+        if (logRecord) {
+          logRecord.status = 'Failed';
+          logRecord.errorMessage = `Resend API Error: ${httpError.message}`;
+          logRecord.lastAttemptAt = new Date();
+          await logRecord.save();
+        }
+        logEmailFailure(cleanTo, cleanSubject, httpError);
+        return {
+          success: false,
+          error: httpError.message,
+          emailLogId: logRecord?._id,
+        };
+      }
+      logger.warn(`[Mail:Resend] Fallback to SMTP explicitly enabled. Retrying via Zoho SMTP...`);
     }
   }
 
@@ -354,8 +372,8 @@ export const retryEmail = async (emailLogId) => {
   logRecord.attemptCount += 1;
   logRecord.lastAttemptAt = new Date();
 
-  // If in simulated mode
-  if (!env.SMTP.USER || !env.SMTP.PASS) {
+  // If in simulated mode (no SMTP credentials and no Resend API key)
+  if (!env.SMTP.USER && !env.SMTP.PASS && !env.RESEND_API_KEY) {
     logRecord.status = 'Delivered';
     logRecord.sentAt = new Date();
     logRecord.messageId = `simulated-retry-${Date.now()}`;
@@ -367,6 +385,70 @@ export const retryEmail = async (emailLogId) => {
       messageId: logRecord.messageId,
       emailLog: logRecord,
     };
+  }
+
+  // 1. If Resend is active, dispatch retry via Resend HTTPS API (Port 443)
+  if (env.RESEND_API_KEY) {
+    try {
+      const resendPayload = {
+        from: env.RESEND_FROM || env.SMTP.FROM,
+        to: [logRecord.recipient],
+        subject: logRecord.subject,
+        html: logRecord.htmlContent,
+        text: logRecord.textContent,
+      };
+
+      if (logRecord.attachments && Array.isArray(logRecord.attachments) && logRecord.attachments.length > 0) {
+        resendPayload.attachments = logRecord.attachments
+          .filter((a) => a && (a.url || a.path))
+          .map((a) => ({
+            filename: a.filename || 'attachment',
+            path: a.url || a.path,
+          }));
+      }
+
+      const res = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${env.RESEND_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(resendPayload),
+      });
+
+      const resData = await res.json();
+      if (!res.ok) {
+        throw new Error(resData.message || `Resend HTTP Error ${res.status}`);
+      }
+
+      const messageId = resData.id || `resend-retry-${Date.now()}`;
+      logRecord.status = 'Delivered';
+      logRecord.sentAt = new Date();
+      logRecord.messageId = messageId;
+      logRecord.errorMessage = null;
+      logRecord.metadata = { ...logRecord.metadata, provider: 'Resend HTTPS' };
+      await logRecord.save();
+
+      logger.info(`[Mail:Resend] Retry succeeded for log ${emailLogId} to ${logRecord.recipient} | ID: ${messageId}`);
+      return {
+        success: true,
+        messageId,
+        emailLog: logRecord,
+      };
+    } catch (httpError) {
+      logger.error(`[Mail:Resend] Retry HTTPS dispatch error: ${httpError.message}`);
+      if (!env.ENABLE_SMTP_FALLBACK) {
+        logRecord.status = 'Failed';
+        logRecord.errorMessage = `Resend API Error: ${httpError.message}`;
+        await logRecord.save();
+        return {
+          success: false,
+          error: httpError.message,
+          emailLog: logRecord,
+        };
+      }
+      logger.warn(`[Mail:Resend] ENABLE_SMTP_FALLBACK is enabled for retry. Retrying via Zoho SMTP...`);
+    }
   }
 
   try {

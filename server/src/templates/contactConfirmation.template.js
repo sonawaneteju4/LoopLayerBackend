@@ -13,7 +13,7 @@ import env from '../config/env.js';
 export const renderContactConfirmation = (contact) => {
   const name = contact.name || 'Valued Client';
   const subjectText = contact.subject || 'General Inquiry';
-  const websiteUrl = env.CLIENT_URL || 'https://looplayerdesing.com';
+  const websiteUrl = env.CLIENT_URL || 'https://looplayerdesign.com';
   const subject = "We've Received Your Message";
 
   const rows = [

@@ -13,7 +13,7 @@ services:
       - key: PORT
         value: 10000
       - key: CLIENT_URL
-        value: https://looplayerdesing.com
+        value: https://looplayerdesign.com
       - key: ALLOWED_ORIGINS
         value: https://looplayerdesign.com,https://www.looplayerdesign.com,https://looplayerdesing.com,https://www.looplayerdesing.com,http://localhost:3000,http://localhost:5173
       - key: MONGODB_URI
@@ -41,9 +41,11 @@ services:
       - key: FROM_NAME
         value: LoopLayer Designs
       - key: FROM_EMAIL
-        value: orders@looplayerdesing.com
+        value: orders@looplayerdesign.com
       - key: ADMIN_NOTIFICATION_EMAIL
         value: looplayerdesign@gmail.com
       - key: RESEND_API_KEY
         sync: false
+      - key: RESEND_FROM
+        value: LoopLayer Designs <orders@looplayerdesign.com>
 

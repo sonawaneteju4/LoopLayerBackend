@@ -13,8 +13,8 @@ import env from '../../config/env.js';
  */
 export const Footer = () => {
   const currentYear = new Date().getFullYear();
-  const websiteUrl = env.CLIENT_URL || 'https://looplayerdesing.com';
-  const supportEmail = env.SMTP.FROM_EMAIL || 'orders@looplayerdesing.com';
+  const websiteUrl = env.CLIENT_URL || 'https://looplayerdesign.com';
+  const supportEmail = env.SMTP.FROM_EMAIL || 'orders@looplayerdesign.com';
 
   return `
     <tr>

@@ -402,7 +402,7 @@ Deep health check inspecting MongoDB Atlas connection & latency, Zoho SMTP healt
         "host": "smtp.zoho.com",
         "port": 465,
         "secure": true,
-        "account": "or****@looplayerdesing.com"
+        "account": "or****@looplayerdesign.com"
       },
       "storage": {
         "provider": "Cloudinary",
