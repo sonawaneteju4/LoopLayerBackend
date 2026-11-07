@@ -379,18 +379,38 @@ export const getInboxStats = async () => {
 };
 
 /**
+ * Helper to find an inbound email document by MongoDB _id, Resend ID, or Message-ID.
+ * Prevents CastError when querying non-ObjectId strings like UUIDs.
+ */
+export const findInboundEmailDoc = async (id, selectExtra = '') => {
+  if (!id) return null;
+  let query;
+  if (mongoose.isValidObjectId(id)) {
+    query = InboundEmail.findById(id);
+  } else {
+    query = InboundEmail.findOne({
+      $or: [{ resendId: id }, { messageId: id }],
+    });
+  }
+  if (selectExtra) {
+    query = query.select(selectExtra);
+  }
+  return await query.exec();
+};
+
+/**
  * Retrieves full details for a single inbound email.
  * Automatically marks email as read unless peek=true.
  */
 export const getInboundEmailById = async (id, { peek = false } = {}) => {
-  const email = await InboundEmail.findById(id).select('+rawPayload');
+  const email = await findInboundEmailDoc(id, '+rawPayload');
   if (!email) {
     throw ApiError.notFound(`Inbound email '${id}' not found`);
   }
 
   if (!peek && !email.isRead) {
     email.isRead = true;
-    await email.save();
+    await InboundEmail.updateOne({ _id: email._id }, { $set: { isRead: true } });
   }
 
   return email;
@@ -400,18 +420,29 @@ export const getInboundEmailById = async (id, { peek = false } = {}) => {
  * Updates status, isRead, or isStarred for a single email.
  */
 export const updateInboundEmail = async (id, { isRead, status, isStarred }) => {
-  const email = await InboundEmail.findById(id);
+  const email = await findInboundEmailDoc(id);
   if (!email) {
     throw ApiError.notFound(`Inbound email '${id}' not found`);
   }
 
-  if (typeof isRead === 'boolean') email.isRead = isRead;
-  if (typeof isStarred === 'boolean') email.isStarred = isStarred;
+  const updates = {};
+  if (typeof isRead === 'boolean') {
+    email.isRead = isRead;
+    updates.isRead = isRead;
+  }
+  if (typeof isStarred === 'boolean') {
+    email.isStarred = isStarred;
+    updates.isStarred = isStarred;
+  }
   if (status && ['received', 'archived', 'spam', 'trash'].includes(status)) {
     email.status = status;
+    updates.status = status;
   }
 
-  await email.save();
+  if (Object.keys(updates).length > 0) {
+    await InboundEmail.updateOne({ _id: email._id }, { $set: updates });
+  }
+
   return email;
 };
 
@@ -419,18 +450,17 @@ export const updateInboundEmail = async (id, { isRead, status, isStarred }) => {
  * Deletes or trashes an inbound email.
  */
 export const deleteInboundEmail = async (id, { permanent = false } = {}) => {
-  const email = await InboundEmail.findById(id);
+  const email = await findInboundEmailDoc(id);
   if (!email) {
     throw ApiError.notFound(`Inbound email '${id}' not found`);
   }
 
   if (permanent || email.status === 'trash') {
-    await InboundEmail.findByIdAndDelete(id);
+    await InboundEmail.deleteOne({ _id: email._id });
     return { success: true, deleted: true, permanent: true };
   }
 
-  email.status = 'trash';
-  await email.save();
+  await InboundEmail.updateOne({ _id: email._id }, { $set: { status: 'trash' } });
   return { success: true, deleted: true, permanent: false };
 };
 
@@ -483,7 +513,7 @@ export const bulkUpdateInboundEmails = async ({ ids = [], action }) => {
  * Reconstructs or extracts raw payload / EML text for developer inspection and download.
  */
 export const getRawEmailData = async (id) => {
-  const email = await InboundEmail.findById(id).select('+rawPayload');
+  const email = await findInboundEmailDoc(id, '+rawPayload');
   if (!email) {
     throw ApiError.notFound(`Inbound email '${id}' not found`);
   }
