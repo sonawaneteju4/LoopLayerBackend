@@ -82,7 +82,7 @@ export const env = {
     FROM:
       process.env.SMTP_FROM ||
       `"${process.env.FROM_NAME || 'LoopLayer Designs'}" <${process.env.FROM_EMAIL || 'orders@looplayerdesign.com'}>`,
-    ADMIN_EMAIL: process.env.ADMIN_NOTIFICATION_EMAIL || 'orders@looplayerdesign.com',
+    ADMIN_EMAIL: process.env.ADMIN_NOTIFICATION_EMAIL || 'looplayerdesign@gmail.com',
   },
 
   // HTTP Email API (Bypasses Render Free Tier SMTP port blocking over HTTPS port 443)
