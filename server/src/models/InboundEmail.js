@@ -198,3 +198,4 @@ inboundEmailSchema.index(
 const InboundEmail = mongoose.model('InboundEmail', inboundEmailSchema);
 
 export default InboundEmail;
+

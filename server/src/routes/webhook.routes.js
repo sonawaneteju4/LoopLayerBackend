@@ -12,3 +12,4 @@ router.post('/resend/inbound', webhookController.handleResendInbound);
 router.post('/inbound', webhookController.handleResendInbound);
 
 export default router;
+

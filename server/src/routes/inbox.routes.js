@@ -50,3 +50,4 @@ router.delete('/:id', inboxController.deleteInboxEmail);
 router.get('/:id/download-raw', inboxController.downloadRawEmail);
 
 export default router;
+

@@ -88,3 +88,4 @@ CREATE POLICY service_role_webhook_insert ON emails
 COMMENT ON TABLE emails IS 'Stores inbound emails received via Resend Inbound Webhook for the LoopLayer Designs Admin Inbox';
 COMMENT ON COLUMN emails.message_id IS 'Unique RFC Message-ID header preventing duplicate deliveries';
 COMMENT ON COLUMN emails.attachments IS 'JSONB array of attachment metadata: [{id, filename, url, size, mime}]';
+
