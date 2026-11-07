@@ -30,10 +30,11 @@ export const renderAdminReply = ({
       .map(
         (att) => `
         <li style="margin-bottom: 6px; font-size: 13px;">
-          <a href="${att.url || '#'}" target="_blank" rel="noopener noreferrer" style="color: #2563EB; font-weight: 600; text-decoration: underline;">
-            ${att.filename || 'Attachment'}
-          </a>
-          ${att.size ? `<span style="color: #94A3B8;">(${Math.round(att.size / 1024)} KB)</span>` : ''}
+          ${att.url && att.url !== '#'
+            ? `<a href="${att.url}" target="_blank" rel="noopener noreferrer" style="color: #2563EB; font-weight: 600; text-decoration: underline;">${att.filename || 'Attachment'}</a>`
+            : `<span style="color: #0F172A; font-weight: 600;">${att.filename || (typeof att === 'string' ? att : 'Attachment')}</span>`
+          }
+          ${att.size ? `<span style="color: #94A3B8;"> (${Math.round(att.size / 1024)} KB)</span>` : ''}
         </li>
       `
       )

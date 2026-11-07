@@ -11,6 +11,7 @@ test('Email Service - getSMTPDiagnostics masks credentials safely', () => {
   assert.equal(diag.secure, true);
   // Email or API identifier should be present
   assert.ok(diag.user);
+  assert.ok(diag.user.includes('****') || diag.user.includes('resend'));
 });
 
 test('Email Service - previewEmail renders multiple template types', () => {

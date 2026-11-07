@@ -100,19 +100,34 @@ export const sendMail = async ({
   // 1. If RESEND_API_KEY is configured, dispatch via HTTPS (Port 443 - bypasses Render Free Tier SMTP blocking)
   if (env.RESEND_API_KEY) {
     try {
+      const resendPayload = {
+        from: env.RESEND_FROM || env.SMTP.FROM,
+        to: [cleanTo],
+        subject: cleanSubject,
+        html,
+        text: fallbackText,
+      };
+
+      if (attachments && Array.isArray(attachments) && attachments.length > 0) {
+        const resendAttachments = attachments
+          .filter((a) => a && (a.content || a.path))
+          .map((a) => ({
+            filename: a.filename || a.name || 'attachment',
+            content: a.content,
+            path: a.path,
+          }));
+        if (resendAttachments.length > 0) {
+          resendPayload.attachments = resendAttachments;
+        }
+      }
+
       const res = await fetch('https://api.resend.com/emails', {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${env.RESEND_API_KEY}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          from: env.RESEND_FROM || env.SMTP.FROM,
-          to: [cleanTo],
-          subject: cleanSubject,
-          html,
-          text: fallbackText,
-        }),
+        body: JSON.stringify(resendPayload),
       });
 
       const resData = await res.json();
@@ -149,7 +164,16 @@ export const sendMail = async ({
       subject: cleanSubject,
       html,
       text: fallbackText,
-      attachments,
+      attachments: Array.isArray(attachments)
+        ? attachments.map((a) => {
+            if (typeof a === 'string') return { filename: a };
+            return {
+              filename: a.filename || a.name || 'attachment',
+              content: a.content ? Buffer.from(a.content, 'base64') : undefined,
+              path: a.path || (a.url && a.url.startsWith('http') ? a.url : undefined),
+            };
+          })
+        : [],
     };
 
     const info = await mailTransporter.sendMail(mailOptions);
