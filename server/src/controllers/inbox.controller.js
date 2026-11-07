@@ -98,6 +98,15 @@ export const downloadRawEmail = async (req, res, next) => {
   }
 };
 
+export const syncInboxWithResend = async (req, res, next) => {
+  try {
+    const result = await inboundEmailService.syncWithResend();
+    return sendSuccess(res, 200, result.message, result);
+  } catch (error) {
+    next(error);
+  }
+};
+
 export default {
   getInboxEmails,
   getInboxStats,
@@ -106,5 +115,6 @@ export default {
   deleteInboxEmail,
   bulkUpdateInboxEmails,
   downloadRawEmail,
+  syncInboxWithResend,
 };
 

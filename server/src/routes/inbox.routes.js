@@ -20,6 +20,12 @@ router.get('/', inboxController.getInboxEmails);
 router.get('/stats', inboxController.getInboxStats);
 
 /**
+ * @route   POST /api/admin/inbox/sync
+ * @desc    Directly synchronize received emails from Resend Receiving API
+ */
+router.post('/sync', inboxController.syncInboxWithResend);
+
+/**
  * @route   POST /api/admin/inbox/bulk
  * @desc    Execute batch actions (mark_read, mark_unread, archive, delete)
  */

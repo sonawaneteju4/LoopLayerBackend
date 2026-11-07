@@ -512,6 +512,94 @@ export const getRawEmailData = async (id) => {
   };
 };
 
+/**
+ * Synchronizes historical and pending inbound emails directly from the Resend Receiving API.
+ * Requires a Resend API key with "Full access" (Sending + Receiving permissions).
+ */
+export const syncWithResend = async () => {
+  if (!env.RESEND_API_KEY) {
+    throw ApiError.badRequest('RESEND_API_KEY is not configured in environment variables');
+  }
+
+  // 1. Fetch list of received emails from Resend Receiving API
+  const listRes = await fetch('https://api.resend.com/emails/receiving', {
+    method: 'GET',
+    headers: {
+      Authorization: `Bearer ${env.RESEND_API_KEY}`,
+      'Content-Type': 'application/json',
+    },
+  });
+
+  const listData = await listRes.json();
+
+  if (!listRes.ok) {
+    if (listData?.name === 'restricted_api_key' || listRes.status === 401) {
+      throw ApiError.forbidden(
+        'Your Resend API Key is restricted to sending only. In Resend Dashboard -> API keys, create a new key with "Full access" (Sending + Receiving) and update RESEND_API_KEY.'
+      );
+    }
+    throw new Error(listData?.message || `Resend API Error ${listRes.status}`);
+  }
+
+  const items = Array.isArray(listData?.data) ? listData.data : [];
+  if (items.length === 0) {
+    return {
+      success: true,
+      count: 0,
+      totalRemote: 0,
+      message: 'No received emails found on Resend',
+    };
+  }
+
+  let syncedCount = 0;
+
+  for (const item of items) {
+    const resendId = item.id;
+    // Check if we already have this email
+    const existing = await InboundEmail.findOne({
+      $or: [
+        ...(resendId ? [{ resendId }] : []),
+        ...(item.message_id ? [{ messageId: item.message_id }] : []),
+      ],
+    });
+
+    if (existing) {
+      continue;
+    }
+
+    // 2. Fetch full email details from Resend Receiving API
+    try {
+      const detailRes = await fetch(`https://api.resend.com/emails/receiving/${resendId}`, {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${env.RESEND_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (detailRes.ok) {
+        const detail = await detailRes.json();
+        await processInboundWebhook(detail);
+        syncedCount++;
+      } else {
+        await processInboundWebhook(item);
+        syncedCount++;
+      }
+    } catch (fetchErr) {
+      logger.warn(`[Inbox:Sync] Failed fetching detail for email ${resendId}: ${fetchErr.message}`);
+    }
+  }
+
+  logger.info(`[Inbox:Sync] Synced ${syncedCount} new email(s) from Resend`);
+
+  return {
+    success: true,
+    count: syncedCount,
+    totalRemote: items.length,
+    message: `Successfully synced ${syncedCount} email(s) from Resend`,
+  };
+};
+
 export default {
   parseSender,
   normalizeRecipients,
@@ -524,5 +612,7 @@ export default {
   deleteInboundEmail,
   bulkUpdateInboundEmails,
   getRawEmailData,
+  syncWithResend,
 };
+
 
