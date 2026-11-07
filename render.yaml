@@ -15,7 +15,7 @@ services:
       - key: CLIENT_URL
         value: https://looplayerdesign.com
       - key: ALLOWED_ORIGINS
-        value: https://looplayerdesign.com,https://www.looplayerdesign.com,https://looplayerdesing.com,https://www.looplayerdesing.com,http://localhost:3000,http://localhost:5173
+        value: https://looplayerdesign.com,https://www.looplayerdesign.com,https://looplayerdesign.com,https://www.looplayerdesign.com,http://localhost:3000,http://localhost:5173
       - key: MONGODB_URI
         sync: false
       - key: JWT_SECRET
@@ -48,4 +48,3 @@ services:
         sync: false
       - key: RESEND_FROM
         value: LoopLayer Designs <orders@looplayerdesign.com>
-
