@@ -31,6 +31,7 @@ import quoteRoutes from "./routes/quote.routes.js";
 import contactRoutes from "./routes/contact.routes.js";
 import adminRoutes from "./routes/admin.routes.js";
 import healthRoutes from "./routes/health.routes.js";
+import webhookRoutes from "./routes/webhook.routes.js";
 
 const app = express();
 
@@ -154,6 +155,8 @@ app.get("/", (req, res) => {
       contact: "POST /api/contact",
       login: "POST /api/auth/login",
       adminSetup: "POST /api/auth/setup-admin",
+      inboundWebhook: "POST /api/webhooks/resend/inbound",
+      inbox: "GET /api/admin/inbox",
     },
   });
 });
@@ -168,6 +171,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/quote", quoteRoutes);
 app.use("/api/contact", contactRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/api/webhooks", webhookRoutes);
 
 // Direct /quotes routes alias as specified in requirements
 const quotesRouter = express.Router();

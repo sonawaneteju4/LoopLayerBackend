@@ -11,6 +11,7 @@ import {
 
 import emailRoutes from './email.routes.js';
 import emailController from '../controllers/email.controller.js';
+import inboxRoutes from './inbox.routes.js';
 
 const router = Router();
 
@@ -135,9 +136,11 @@ router.delete(['/contact/:id', '/contacts/:id'], adminController.deleteContact);
 
 /**
  * ==========================================
- * EMAIL INFRASTRUCTURE & SETTINGS
+ * EMAIL INBOX (INBOUND) & OUTBOUND LOGS
  * ==========================================
  */
+router.use('/inbox', inboxRoutes);
+router.use('/inbound-emails', inboxRoutes);
 router.use('/emails', emailRoutes);
 router.get('/settings/smtp-status', emailController.getSMTPStatus);
 router.post('/settings/smtp-test', emailController.testSMTPConnection);
