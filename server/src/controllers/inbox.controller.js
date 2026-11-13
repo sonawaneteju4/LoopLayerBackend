@@ -1,4 +1,5 @@
 import inboundEmailService from '../services/inboundEmail.service.js';
+import sseService from '../services/sse.service.js';
 import { sendSuccess } from '../utils/response.js';
 
 /**
@@ -107,6 +108,13 @@ export const syncInboxWithResend = async (req, res, next) => {
   }
 };
 
+/**
+ * Server-Sent Events (SSE) live stream for Real-Time Inbound Email updates
+ */
+export const streamInboxEvents = (req, res) => {
+  sseService.addClient(req, res);
+};
+
 export default {
   getInboxEmails,
   getInboxStats,
@@ -116,5 +124,6 @@ export default {
   bulkUpdateInboxEmails,
   downloadRawEmail,
   syncInboxWithResend,
+  streamInboxEvents,
 };
 

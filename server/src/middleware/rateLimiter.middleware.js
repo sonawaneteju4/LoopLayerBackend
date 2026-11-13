@@ -70,11 +70,23 @@ export const setupLimiter = rateLimit({
   handler: createLimitHandler('Admin setup attempts exceeded.'),
 });
 
+/**
+ * Webhook rate limiter: allows high-throughput inbound email webhooks while preventing DDoS
+ */
+export const webhookLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 120,
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: createLimitHandler('Too many webhook requests. Please throttle incoming events.'),
+});
+
 export default {
   globalLimiter,
   quoteLimiter,
   contactLimiter,
   authLimiter,
   setupLimiter,
+  webhookLimiter,
 };
 

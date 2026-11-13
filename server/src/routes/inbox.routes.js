@@ -32,6 +32,12 @@ router.post('/sync', inboxController.syncInboxWithResend);
 router.post('/bulk', inboxController.bulkUpdateInboxEmails);
 
 /**
+ * @route   GET /api/admin/inbox/stream
+ * @desc    Live Server-Sent Events stream for real-time inbound email notifications
+ */
+router.get('/stream', inboxController.streamInboxEvents);
+
+/**
  * @route   GET /api/admin/inbox/:id
  * @desc    Retrieve full inbound email details (headers, sanitized HTML, attachments)
  */

@@ -139,6 +139,54 @@ export const getFileStream = async (url) => {
   return response.data;
 };
 
+/**
+ * Uploads an inbound email attachment (base64 string or remote URL) to Cloudinary
+ *
+ * @param {Object} options
+ * @param {string} options.filename
+ * @param {string} [options.mime]
+ * @param {string} [options.content] - Base64 content
+ * @param {string} [options.url] - Remote URL
+ * @returns {Promise<{ url: string, publicId: string, size: number } | null>}
+ */
+export const uploadEmailAttachment = async ({ filename, mime = 'application/octet-stream', content, url }) => {
+  if (!env.CLOUDINARY.CLOUD_NAME || !env.CLOUDINARY.API_KEY || !env.CLOUDINARY.API_SECRET) {
+    logger.warn('[Cloudinary] Skipping attachment upload - Cloudinary credentials not configured');
+    return null;
+  }
+
+  const folder = 'looplayer/email-attachments';
+  const resourceType = getResourceType(filename);
+
+  try {
+    let uploadTarget = null;
+    if (content) {
+      uploadTarget = `data:${mime};base64,${content}`;
+    } else if (url && url.startsWith('http')) {
+      uploadTarget = url;
+    }
+
+    if (!uploadTarget) return null;
+
+    const result = await cloudinary.uploader.upload(uploadTarget, {
+      folder,
+      resource_type: resourceType,
+      use_filename: true,
+      unique_filename: true,
+    });
+
+    return {
+      url: result.secure_url,
+      publicId: result.public_id,
+      size: result.bytes || 0,
+      format: result.format,
+    };
+  } catch (err) {
+    logger.error(`[Cloudinary] Failed to upload email attachment '${filename}': ${err.message}`);
+    return null;
+  }
+};
+
 export default {
   getResourceType,
   uploadFile,
@@ -146,5 +194,6 @@ export default {
   deleteFile,
   deleteMultipleFiles,
   getFileStream,
+  uploadEmailAttachment,
 };
 

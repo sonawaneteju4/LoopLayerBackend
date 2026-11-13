@@ -1,7 +1,11 @@
 import { Router } from 'express';
 import webhookController from '../controllers/webhook.controller.js';
+import { webhookLimiter } from '../middleware/rateLimiter.middleware.js';
 
 const router = Router();
+
+// Apply rate limiter to inbound webhooks
+router.use(webhookLimiter);
 
 /**
  * @route   POST /api/webhooks/resend/inbound
@@ -10,6 +14,7 @@ const router = Router();
  */
 router.post('/resend/inbound', webhookController.handleResendInbound);
 router.post('/inbound', webhookController.handleResendInbound);
+router.post('/inbound-email', webhookController.handleResendInbound);
 
 export default router;
 

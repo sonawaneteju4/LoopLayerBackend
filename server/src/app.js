@@ -155,8 +155,10 @@ app.get("/", (req, res) => {
       contact: "POST /api/contact",
       login: "POST /api/auth/login",
       adminSetup: "POST /api/auth/setup-admin",
-      inboundWebhook: "POST /api/webhooks/resend/inbound",
+      inboundWebhook: "POST /api/inbound-email",
+      inboundWebhookLegacy: "POST /api/webhooks/resend/inbound",
       inbox: "GET /api/admin/inbox",
+      inboxStream: "GET /api/admin/inbox/stream",
     },
   });
 });
@@ -172,6 +174,7 @@ app.use("/api/quote", quoteRoutes);
 app.use("/api/contact", contactRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/webhooks", webhookRoutes);
+app.use("/api/inbound-email", webhookRoutes);
 
 // Direct /quotes routes alias as specified in requirements
 const quotesRouter = express.Router();

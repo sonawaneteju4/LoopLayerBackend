@@ -10,15 +10,16 @@ import logger from '../utils/logger.js';
 export const authenticateAdmin = async (req, res, next) => {
   try {
     const authHeader = req.headers.authorization;
+    let token = null;
 
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      throw ApiError.unauthorized('Authentication token missing or invalid format (Bearer token required)');
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      token = authHeader.split(' ')[1];
+    } else if (req.query?.token) {
+      token = req.query.token;
     }
 
-    const token = authHeader.split(' ')[1];
-
     if (!token) {
-      throw ApiError.unauthorized('Authentication token not provided');
+      throw ApiError.unauthorized('Authentication token missing or invalid format (Bearer token or ?token= required)');
     }
 
     // Verify token signature and expiration

@@ -3,6 +3,10 @@ import InboundEmail from "../models/InboundEmail.js";
 import env from "../config/env.js";
 import logger from "../utils/logger.js";
 import { ApiError } from "../utils/response.js";
+import mailService from "./mail.service.js";
+import sseService from "./sse.service.js";
+import cloudinaryService from "./cloudinary.service.js";
+import renderInboundEmailNotification from "../templates/inboundEmailNotification.template.js";
 
 /**
  * Extracts normalized email address and display name from an RFC sender string.
@@ -194,21 +198,57 @@ export const processInboundWebhook = async (payload, headers = {}) => {
           .trim()
       : "");
 
-  // 5. Parse attachments
+  // 5. Parse attachments & store in Cloudinary if content/URL is present
   const rawAttachments = Array.isArray(data.attachments)
     ? data.attachments
     : [];
-  const attachments = rawAttachments.map((att, idx) => ({
-    id: att.id || `att_${idx}_${Date.now()}`,
-    filename: att.filename || att.name || `attachment_${idx + 1}`,
-    url: att.url || att.download_url || "",
-    size:
-      Number(att.size) ||
-      (att.content ? Buffer.byteLength(att.content, "base64") : 0),
-    mime: att.content_type || att.mime || "application/octet-stream",
-    content: att.content || null,
-    contentId: att.content_id || "",
-  }));
+  const attachments = await Promise.all(
+    rawAttachments.map(async (att, idx) => {
+      const filename = att.filename || att.name || `attachment_${idx + 1}`;
+      const mime = att.content_type || att.mime || "application/octet-stream";
+      let url = att.url || att.download_url || "";
+      let cloudinaryId = "";
+      let size =
+        Number(att.size) ||
+        (att.content ? Buffer.byteLength(att.content, "base64") : 0);
+
+      // Upload to Cloudinary if base64 content or remote URL is available
+      if (
+        att.content ||
+        (url && url.startsWith("http") && !url.includes("cloudinary.com"))
+      ) {
+        try {
+          const cloudRes = await cloudinaryService.uploadEmailAttachment({
+            filename,
+            mime,
+            content: att.content,
+            url,
+          });
+          if (cloudRes?.url) {
+            url = cloudRes.url;
+            cloudinaryId = cloudRes.publicId || "";
+            if (cloudRes.size) size = cloudRes.size;
+          }
+        } catch (cloudErr) {
+          logger.warn(
+            `[Inbox:Attachment] Cloudinary upload skipped for ${filename}: ${cloudErr.message}`
+          );
+        }
+      }
+
+      return {
+        id: att.id || `att_${idx}_${Date.now()}`,
+        filename,
+        url,
+        size,
+        mime,
+        type: mime,
+        cloudinaryId,
+        content: att.content || null,
+        contentId: att.content_id || "",
+      };
+    })
+  );
 
   // 6. Spam score detection
   const spamScore =
@@ -247,8 +287,25 @@ export const processInboundWebhook = async (payload, headers = {}) => {
   await emailRecord.save();
 
   logger.info(
-    `[Inbox] Inbound email saved: From: ${fromEmail} | Subject: "${subject}" | Attachments: ${attachments.length} | ID: ${emailRecord._id}`,
+    `[Inbox] Inbound email saved: From: ${fromEmail} | Subject: "${subject}" | Attachments: ${attachments.length} | ID: ${emailRecord._id}`
   );
+
+  // 8. Broadcast real-time SSE event to all connected admin dashboards
+  try {
+    sseService.broadcast("NEW_EMAIL", {
+      email: emailRecord.toJSON ? emailRecord.toJSON() : emailRecord,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (sseErr) {
+    logger.warn(`[Inbox:SSE] Real-time broadcast failed: ${sseErr.message}`);
+  }
+
+  // 9. Send Admin Notification Email via Resend
+  sendAdminInboundNotification(emailRecord).catch((notifErr) => {
+    logger.error(
+      `[Inbox:Notification] Admin email alert error: ${notifErr.message}`
+    );
+  });
 
   return {
     success: true,
@@ -257,6 +314,51 @@ export const processInboundWebhook = async (payload, headers = {}) => {
     emailId: emailRecord._id,
     record: emailRecord,
   };
+};
+
+/**
+ * Sends notification email to the administrator when a customer emails orders@looplayerdesign.com.
+ * Dispatches via Resend HTTPS (or configured fallback) with direct link to /admin/inbox/:id.
+ */
+export const sendAdminInboundNotification = async (emailRecord) => {
+  const adminEmail =
+    env.ADMIN_NOTIFICATION_EMAIL ||
+    env.SMTP.ADMIN_EMAIL ||
+    "looplayerdesign@gmail.com";
+
+  // Guard against notification loops if the incoming message is from the admin email itself
+  if (
+    emailRecord.fromEmail &&
+    emailRecord.fromEmail.toLowerCase() === adminEmail.toLowerCase()
+  ) {
+    logger.info(
+      `[Inbox:Notification] Skipping admin notification: sender is admin email (${adminEmail})`
+    );
+    return { success: true, skipped: true };
+  }
+
+  const { subject, html, text } = renderInboundEmailNotification(emailRecord);
+
+  const result = await mailService.sendMail({
+    to: adminEmail,
+    recipientName: "LoopLayer Admin",
+    subject,
+    html,
+    text,
+    type: "admin_inbound_notification",
+    relatedId: String(emailRecord._id),
+    relatedType: "System",
+    metadata: {
+      inboundEmailId: String(emailRecord._id),
+      senderEmail: emailRecord.fromEmail,
+      subject: emailRecord.subject,
+    },
+  });
+
+  logger.info(
+    `[Inbox:Notification] Admin notification dispatched to ${adminEmail} for email ${emailRecord._id} (success: ${result.success})`
+  );
+  return result;
 };
 
 /**
@@ -699,4 +801,5 @@ export default {
   bulkUpdateInboundEmails,
   getRawEmailData,
   syncWithResend,
+  sendAdminInboundNotification,
 };

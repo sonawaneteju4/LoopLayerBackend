@@ -30,6 +30,18 @@ const inboundAttachmentSchema = new mongoose.Schema(
       trim: true,
       default: 'application/octet-stream',
     },
+    type: {
+      type: String,
+      trim: true,
+      default: function () {
+        return this.mime || 'application/octet-stream';
+      },
+    },
+    cloudinaryId: {
+      type: String,
+      trim: true,
+      default: '',
+    },
     content: {
       type: String, // Base64 content if delivered directly in webhook
       select: false, // Don't return full heavy base64 by default in list queries
@@ -169,6 +181,25 @@ const inboundEmailSchema = new mongoose.Schema(
     toObject: { virtuals: true },
   }
 );
+
+// Virtual aliases aligning with requested Schema specification
+inboundEmailSchema.virtual('to').get(function () {
+  return this.toEmail;
+}).set(function (val) {
+  this.toEmail = Array.isArray(val) ? val : [val];
+});
+
+inboundEmailSchema.virtual('text').get(function () {
+  return this.textBody;
+}).set(function (val) {
+  this.textBody = val;
+});
+
+inboundEmailSchema.virtual('html').get(function () {
+  return this.htmlBody;
+}).set(function (val) {
+  this.htmlBody = val;
+});
 
 // Compound indexes for high-speed admin inbox filtering and sorting
 inboundEmailSchema.index({ status: 1, receivedAt: -1 });
