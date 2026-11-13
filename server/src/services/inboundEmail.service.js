@@ -139,7 +139,7 @@ export const verifyWebhookSignature = ({ headers, rawBody }) => {
  */
 export const processInboundWebhook = async (payload, headers = {}) => {
   // Support both Resend webhook wrappers { type: "email.received", data: { ... } } and direct payloads
-  const data = payload?.data || payload;
+  let data = payload?.data || payload;
 
   if (!data || typeof data !== "object") {
     throw ApiError.badRequest("Invalid or empty webhook payload");
@@ -147,6 +147,41 @@ export const processInboundWebhook = async (payload, headers = {}) => {
 
   // Extract / generate Message-ID for deduplication
   const resendId = data.email_id || data.id || "";
+
+  // If payload is a Resend notification without body, enrich with full message from Resend Receiving API
+  if (
+    resendId &&
+    !data.html &&
+    !data.text &&
+    !data.html_body &&
+    !data.text_body &&
+    env.RESEND_API_KEY
+  ) {
+    try {
+      const detailRes = await fetch(
+        `https://api.resend.com/emails/receiving/${resendId}`,
+        {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${env.RESEND_API_KEY}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      if (detailRes.ok) {
+        const detail = await detailRes.json();
+        data = { ...data, ...detail };
+        logger.info(
+          `[Inbox:Resend] Enriched inbound email ${resendId} with full message body from Resend API`
+        );
+      }
+    } catch (fetchErr) {
+      logger.warn(
+        `[Inbox:Resend] Could not fetch detail for ${resendId}: ${fetchErr.message}`
+      );
+    }
+  }
+
   const messageId =
     data.message_id ||
     data.headers?.["message-id"] ||

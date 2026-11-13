@@ -79,3 +79,28 @@ test('InboundEmail Model - virtual aliases for to, text, html', () => {
   assert.equal(email.html, '<p>HTML content</p>');
   assert.equal(email.attachments[0].type, 'application/pdf');
 });
+
+test('Resend Webhook Ingestion - parses real email.received event payload', () => {
+  const payload = {
+    created_at: '2026-11-13T18:12:11.000Z',
+    data: {
+      attachments: [],
+      bcc: [],
+      cc: [],
+      created_at: '2026-11-13T18:12:24.234Z',
+      email_id: 'c93afa86-cecd-49f8-a160-42dd4db192a2',
+      from: 'sonawaneteju4@gmail.com',
+      message_id: '<CAKKff9t86sSutmh+GcyiD1fWVNErDF7E=406nf4EAD0f=hHzMQ@mail.gmail.com>',
+      received_for: ['orders@looplayerdesign.com'],
+      subject: 'Testing',
+      to: ['orders@looplayerdesign.com'],
+    },
+    type: 'email.received',
+  };
+
+  const data = payload.data;
+  assert.equal(data.email_id, 'c93afa86-cecd-49f8-a160-42dd4db192a2');
+  assert.equal(data.from, 'sonawaneteju4@gmail.com');
+  assert.equal(data.subject, 'Testing');
+  assert.deepEqual(data.to, ['orders@looplayerdesign.com']);
+});

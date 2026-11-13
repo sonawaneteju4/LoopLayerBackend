@@ -39,11 +39,17 @@ test('Inbound Email - normalizeRecipients formats array and comma strings', () =
 });
 
 test('Inbound Email - verifyWebhookSignature gracefully skips when secret not set', () => {
-  const result = verifyWebhookSignature({
-    headers: {},
-    rawBody: { test: true },
-  });
-  assert.equal(result.valid, true);
-  assert.equal(result.skipped, true);
+  const orig = process.env.RESEND_WEBHOOK_SECRET;
+  delete process.env.RESEND_WEBHOOK_SECRET;
+  try {
+    const result = verifyWebhookSignature({
+      headers: {},
+      rawBody: { test: true },
+    });
+    assert.equal(result.valid, true);
+    assert.equal(result.skipped, true);
+  } finally {
+    if (orig !== undefined) process.env.RESEND_WEBHOOK_SECRET = orig;
+  }
 });
 

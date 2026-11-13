@@ -8,13 +8,14 @@ const router = Router();
 router.use(webhookLimiter);
 
 /**
- * @route   POST /api/webhooks/resend/inbound
+ * @route   POST /api/inbound-email & /api/webhooks/resend/inbound
  * @desc    Resend Inbound Email Webhook endpoint
  * @access  Public (Authenticated via Svix Signature / Header)
  */
+router.post('/', webhookController.handleResendInbound);
+router.post('/inbound-email', webhookController.handleResendInbound);
 router.post('/resend/inbound', webhookController.handleResendInbound);
 router.post('/inbound', webhookController.handleResendInbound);
-router.post('/inbound-email', webhookController.handleResendInbound);
 
 export default router;
 
