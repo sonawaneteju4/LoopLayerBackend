@@ -1,20 +1,20 @@
-import crypto from 'crypto';
-import InboundEmail from '../models/InboundEmail.js';
-import env from '../config/env.js';
-import logger from '../utils/logger.js';
-import { ApiError } from '../utils/response.js';
+import crypto from "crypto";
+import InboundEmail from "../models/InboundEmail.js";
+import env from "../config/env.js";
+import logger from "../utils/logger.js";
+import { ApiError } from "../utils/response.js";
 
 /**
  * Extracts normalized email address and display name from an RFC sender string.
  * Example: "John Doe <john@example.com>" -> { fromEmail: "john@example.com", fromName: "John Doe" }
  */
 export const parseSender = (sender) => {
-  if (!sender) return { fromEmail: 'unknown@example.com', fromName: '' };
+  if (!sender) return { fromEmail: "unknown@example.com", fromName: "" };
 
-  if (typeof sender === 'object') {
+  if (typeof sender === "object") {
     return {
-      fromEmail: (sender.email || sender.address || '').toLowerCase().trim(),
-      fromName: (sender.name || '').trim(),
+      fromEmail: (sender.email || sender.address || "").toLowerCase().trim(),
+      fromName: (sender.name || "").trim(),
     };
   }
 
@@ -22,12 +22,15 @@ export const parseSender = (sender) => {
   const match = str.match(/^(?:"?([^"]*)"?\s)?(?:<?(.+@[^>]+)>?)$/);
 
   if (match) {
-    const fromName = (match[1] || '').trim();
-    const fromEmail = (match[2] || '').toLowerCase().trim();
+    const fromName = (match[1] || "").trim();
+    const fromEmail = (match[2] || "").toLowerCase().trim();
     return { fromEmail, fromName };
   }
 
-  return { fromEmail: str.toLowerCase().replace(/[<>]/g, '').trim(), fromName: '' };
+  return {
+    fromEmail: str.toLowerCase().replace(/[<>]/g, "").trim(),
+    fromName: "",
+  };
 };
 
 /**
@@ -38,16 +41,17 @@ export const normalizeRecipients = (recipients) => {
   if (Array.isArray(recipients)) {
     return recipients
       .map((r) => {
-        if (typeof r === 'object' && r) return (r.email || r.address || '').toLowerCase().trim();
+        if (typeof r === "object" && r)
+          return (r.email || r.address || "").toLowerCase().trim();
         return parseSender(r).fromEmail;
       })
-      .filter((e) => e && e.includes('@'));
+      .filter((e) => e && e.includes("@"));
   }
-  if (typeof recipients === 'string') {
+  if (typeof recipients === "string") {
     return recipients
-      .split(',')
+      .split(",")
       .map((r) => parseSender(r).fromEmail)
-      .filter((e) => e && e.includes('@'));
+      .filter((e) => e && e.includes("@"));
   }
   return [];
 };
@@ -63,48 +67,63 @@ export const verifyWebhookSignature = ({ headers, rawBody }) => {
     return { valid: true, skipped: true };
   }
 
-  const svixId = headers['svix-id'] || headers['webhook-id'];
-  const svixTimestamp = headers['svix-timestamp'] || headers['webhook-timestamp'];
-  const svixSignature = headers['svix-signature'] || headers['webhook-signature'];
+  const svixId = headers["svix-id"] || headers["webhook-id"];
+  const svixTimestamp =
+    headers["svix-timestamp"] || headers["webhook-timestamp"];
+  const svixSignature =
+    headers["svix-signature"] || headers["webhook-signature"];
 
   if (!svixId || !svixTimestamp || !svixSignature) {
-    return { valid: false, error: 'Missing required Svix webhook verification headers' };
+    return {
+      valid: false,
+      error: "Missing required Svix webhook verification headers",
+    };
   }
 
   // Prevent replay attacks (tolerance: 5 minutes)
   const timestampSec = parseInt(svixTimestamp, 10);
   const nowSec = Math.floor(Date.now() / 1000);
   if (Math.abs(nowSec - timestampSec) > 300) {
-    return { valid: false, error: 'Webhook timestamp expired (clock drift > 5m)' };
+    return {
+      valid: false,
+      error: "Webhook timestamp expired (clock drift > 5m)",
+    };
   }
 
   try {
     // Extract base64 secret if prefixed with whsec_
-    const secretKey = secret.startsWith('whsec_') ? secret.slice(6) : secret;
-    const secretBytes = Buffer.from(secretKey, 'base64');
+    const secretKey = secret.startsWith("whsec_") ? secret.slice(6) : secret;
+    const secretBytes = Buffer.from(secretKey, "base64");
 
-    const bodyString = typeof rawBody === 'string' ? rawBody : JSON.stringify(rawBody);
+    const bodyString =
+      typeof rawBody === "string" ? rawBody : JSON.stringify(rawBody);
     const signedPayload = `${svixId}.${svixTimestamp}.${bodyString}`;
 
     const expectedSignature = crypto
-      .createHmac('sha256', secretBytes)
+      .createHmac("sha256", secretBytes)
       .update(signedPayload)
-      .digest('base64');
+      .digest("base64");
 
-    const signatures = svixSignature.split(' ').map((sig) => {
-      const parts = sig.split(',');
+    const signatures = svixSignature.split(" ").map((sig) => {
+      const parts = sig.split(",");
       return parts.length > 1 ? parts[1] : parts[0];
     });
 
     const isMatch = signatures.some((sig) => {
       try {
-        return crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(expectedSignature));
+        return crypto.timingSafeEqual(
+          Buffer.from(sig),
+          Buffer.from(expectedSignature),
+        );
       } catch {
         return false;
       }
     });
 
-    return { valid: isMatch, error: isMatch ? null : 'Invalid webhook signature' };
+    return {
+      valid: isMatch,
+      error: isMatch ? null : "Invalid webhook signature",
+    };
   } catch (err) {
     logger.error(`[Webhook] Signature verification error: ${err.message}`);
     return { valid: false, error: err.message };
@@ -118,18 +137,18 @@ export const processInboundWebhook = async (payload, headers = {}) => {
   // Support both Resend webhook wrappers { type: "email.received", data: { ... } } and direct payloads
   const data = payload?.data || payload;
 
-  if (!data || typeof data !== 'object') {
-    throw ApiError.badRequest('Invalid or empty webhook payload');
+  if (!data || typeof data !== "object") {
+    throw ApiError.badRequest("Invalid or empty webhook payload");
   }
 
   // Extract / generate Message-ID for deduplication
-  const resendId = data.email_id || data.id || '';
+  const resendId = data.email_id || data.id || "";
   const messageId =
     data.message_id ||
-    data.headers?.['message-id'] ||
-    data.headers?.['Message-ID'] ||
+    data.headers?.["message-id"] ||
+    data.headers?.["Message-ID"] ||
     (resendId ? `<${resendId}@resend.com>` : null) ||
-    `<LLD-${Date.now()}-${crypto.randomBytes(6).toString('hex')}@inbound.looplayerdesign.com>`;
+    `<LLD-${Date.now()}-${crypto.randomBytes(6).toString("hex")}@inbound.looplayerdesign.com>`;
 
   // 1. Strict deduplication check: check if this messageId was already recorded
   const existing = await InboundEmail.findOne({
@@ -141,52 +160,64 @@ export const processInboundWebhook = async (payload, headers = {}) => {
     return {
       success: true,
       duplicate: true,
-      message: 'Email already received and indexed',
+      message: "Email already received and indexed",
       emailId: existing._id,
     };
   }
 
   // 2. Parse sender details
-  const rawFrom = data.from || data.sender || '';
+  const rawFrom = data.from || data.sender || "";
   const { fromEmail, fromName } = parseSender(rawFrom);
 
-  if (!fromEmail || !fromEmail.includes('@')) {
-    throw ApiError.badRequest(`Missing or invalid sender email in payload: '${rawFrom}'`);
+  if (!fromEmail || !fromEmail.includes("@")) {
+    throw ApiError.badRequest(
+      `Missing or invalid sender email in payload: '${rawFrom}'`,
+    );
   }
 
   // 3. Parse recipient lists
   const toEmail = normalizeRecipients(data.to);
   const cc = normalizeRecipients(data.cc);
   const bcc = normalizeRecipients(data.bcc);
-  const replyTo = data.reply_to ? parseSender(data.reply_to).fromEmail : '';
+  const replyTo = data.reply_to ? parseSender(data.reply_to).fromEmail : "";
 
   // 4. Content bodies
-  const subject = (data.subject || '').trim() || '(No Subject)';
-  const htmlBody = data.html || data.html_body || '';
+  const subject = (data.subject || "").trim() || "(No Subject)";
+  const htmlBody = data.html || data.html_body || "";
   const textBody =
     data.text ||
     data.text_body ||
-    (htmlBody ? htmlBody.replace(/<[^>]*>?/gm, ' ').replace(/\s+/g, ' ').trim() : '');
+    (htmlBody
+      ? htmlBody
+          .replace(/<[^>]*>?/gm, " ")
+          .replace(/\s+/g, " ")
+          .trim()
+      : "");
 
   // 5. Parse attachments
-  const rawAttachments = Array.isArray(data.attachments) ? data.attachments : [];
+  const rawAttachments = Array.isArray(data.attachments)
+    ? data.attachments
+    : [];
   const attachments = rawAttachments.map((att, idx) => ({
     id: att.id || `att_${idx}_${Date.now()}`,
     filename: att.filename || att.name || `attachment_${idx + 1}`,
-    url: att.url || att.download_url || '',
-    size: Number(att.size) || (att.content ? Buffer.byteLength(att.content, 'base64') : 0),
-    mime: att.content_type || att.mime || 'application/octet-stream',
+    url: att.url || att.download_url || "",
+    size:
+      Number(att.size) ||
+      (att.content ? Buffer.byteLength(att.content, "base64") : 0),
+    mime: att.content_type || att.mime || "application/octet-stream",
     content: att.content || null,
-    contentId: att.content_id || '',
+    contentId: att.content_id || "",
   }));
 
   // 6. Spam score detection
   const spamScore =
-    typeof data.spam_score === 'number'
+    typeof data.spam_score === "number"
       ? data.spam_score
-      : parseFloat(data.headers?.['x-spam-score'] || '0') || 0;
+      : parseFloat(data.headers?.["x-spam-score"] || "0") || 0;
 
-  const status = spamScore >= 5 || data.spam_status === 'spam' ? 'spam' : 'received';
+  const status =
+    spamScore >= 5 || data.spam_status === "spam" ? "spam" : "received";
 
   // 7. Store in MongoDB
   const emailRecord = new InboundEmail({
@@ -194,7 +225,7 @@ export const processInboundWebhook = async (payload, headers = {}) => {
     resendId,
     fromEmail,
     fromName,
-    toEmail: toEmail.length > 0 ? toEmail : ['orders@looplayerdesign.com'],
+    toEmail: toEmail.length > 0 ? toEmail : ["orders@looplayerdesign.com"],
     cc,
     bcc,
     replyTo,
@@ -206,20 +237,23 @@ export const processInboundWebhook = async (payload, headers = {}) => {
     spamScore,
     status,
     isRead: false,
-    receivedAt: data.created_at || data.date ? new Date(data.created_at || data.date) : new Date(),
+    receivedAt:
+      data.created_at || data.date
+        ? new Date(data.created_at || data.date)
+        : new Date(),
     rawPayload: payload,
   });
 
   await emailRecord.save();
 
   logger.info(
-    `[Inbox] Inbound email saved: From: ${fromEmail} | Subject: "${subject}" | Attachments: ${attachments.length} | ID: ${emailRecord._id}`
+    `[Inbox] Inbound email saved: From: ${fromEmail} | Subject: "${subject}" | Attachments: ${attachments.length} | ID: ${emailRecord._id}`,
   );
 
   return {
     success: true,
     duplicate: false,
-    message: 'Inbound email received and indexed successfully',
+    message: "Inbound email received and indexed successfully",
     emailId: emailRecord._id,
     record: emailRecord,
   };
@@ -231,64 +265,64 @@ export const processInboundWebhook = async (payload, headers = {}) => {
 export const getInboundEmails = async ({
   page = 1,
   limit = 20,
-  filter = 'all', // 'all' | 'unread' | 'read' | 'today' | 'last_7_days' | 'spam' | 'with_attachments' | 'archived' | 'starred'
-  search = '',
-  sortField = 'receivedAt',
-  sortOrder = 'desc',
+  filter = "all", // 'all' | 'unread' | 'read' | 'today' | 'last_7_days' | 'spam' | 'with_attachments' | 'archived' | 'starred'
+  search = "",
+  sortField = "receivedAt",
+  sortOrder = "desc",
 } = {}) => {
   const query = {};
 
   // Status & category filter
   switch (filter) {
-    case 'unread':
+    case "unread":
       query.isRead = false;
-      query.status = { $ne: 'trash' };
+      query.status = { $ne: "trash" };
       break;
-    case 'read':
+    case "read":
       query.isRead = true;
-      query.status = { $ne: 'trash' };
+      query.status = { $ne: "trash" };
       break;
-    case 'today': {
+    case "today": {
       const startOfToday = new Date();
       startOfToday.setHours(0, 0, 0, 0);
       query.receivedAt = { $gte: startOfToday };
-      query.status = { $nin: ['trash', 'archived'] };
+      query.status = { $nin: ["trash", "archived"] };
       break;
     }
-    case 'last_7_days': {
+    case "last_7_days": {
       const sevenDaysAgo = new Date();
       sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
       query.receivedAt = { $gte: sevenDaysAgo };
-      query.status = { $nin: ['trash', 'archived'] };
+      query.status = { $nin: ["trash", "archived"] };
       break;
     }
-    case 'with_attachments':
-      query['attachments.0'] = { $exists: true };
-      query.status = { $nin: ['trash', 'archived'] };
+    case "with_attachments":
+      query["attachments.0"] = { $exists: true };
+      query.status = { $nin: ["trash", "archived"] };
       break;
-    case 'spam':
-      query.status = 'spam';
+    case "spam":
+      query.status = "spam";
       break;
-    case 'archived':
-      query.status = 'archived';
+    case "archived":
+      query.status = "archived";
       break;
-    case 'starred':
+    case "starred":
       query.isStarred = true;
-      query.status = { $ne: 'trash' };
+      query.status = { $ne: "trash" };
       break;
-    case 'trash':
-      query.status = 'trash';
+    case "trash":
+      query.status = "trash";
       break;
-    case 'all':
+    case "all":
     default:
-      query.status = { $nin: ['trash', 'archived'] };
+      query.status = { $nin: ["trash", "archived"] };
       break;
   }
 
   // Search logic across sender, subject, and text body
-  if (search && search.trim() !== '') {
+  if (search && search.trim() !== "") {
     const term = search.trim();
-    const regex = new RegExp(term, 'i');
+    const regex = new RegExp(term, "i");
     query.$or = [
       { fromEmail: regex },
       { fromName: regex },
@@ -301,14 +335,14 @@ export const getInboundEmails = async ({
   const pageNum = Math.max(1, parseInt(page, 10));
   const limitNum = Math.min(100, Math.max(1, parseInt(limit, 10)));
   const skip = (pageNum - 1) * limitNum;
-  const sortDirection = sortOrder.toLowerCase() === 'asc' ? 1 : -1;
+  const sortDirection = sortOrder.toLowerCase() === "asc" ? 1 : -1;
 
   const [emails, total] = await Promise.all([
     InboundEmail.find(query)
       .sort({ [sortField]: sortDirection })
       .skip(skip)
       .limit(limitNum)
-      .select('-rawPayload')
+      .select("-rawPayload")
       .lean(),
     InboundEmail.countDocuments(query),
   ]);
@@ -345,24 +379,30 @@ export const getInboxStats = async () => {
     archived,
     starred,
   ] = await Promise.all([
-    InboundEmail.countDocuments({ status: { $nin: ['trash', 'archived'] } }),
-    InboundEmail.countDocuments({ isRead: false, status: { $nin: ['trash', 'archived'] } }),
-    InboundEmail.countDocuments({ isRead: true, status: { $nin: ['trash', 'archived'] } }),
+    InboundEmail.countDocuments({ status: { $nin: ["trash", "archived"] } }),
+    InboundEmail.countDocuments({
+      isRead: false,
+      status: { $nin: ["trash", "archived"] },
+    }),
+    InboundEmail.countDocuments({
+      isRead: true,
+      status: { $nin: ["trash", "archived"] },
+    }),
     InboundEmail.countDocuments({
       receivedAt: { $gte: startOfToday },
-      status: { $nin: ['trash', 'archived'] },
+      status: { $nin: ["trash", "archived"] },
     }),
     InboundEmail.countDocuments({
       receivedAt: { $gte: sevenDaysAgo },
-      status: { $nin: ['trash', 'archived'] },
+      status: { $nin: ["trash", "archived"] },
     }),
     InboundEmail.countDocuments({
-      'attachments.0': { $exists: true },
-      status: { $nin: ['trash', 'archived'] },
+      "attachments.0": { $exists: true },
+      status: { $nin: ["trash", "archived"] },
     }),
-    InboundEmail.countDocuments({ status: 'spam' }),
-    InboundEmail.countDocuments({ status: 'archived' }),
-    InboundEmail.countDocuments({ isStarred: true, status: { $ne: 'trash' } }),
+    InboundEmail.countDocuments({ status: "spam" }),
+    InboundEmail.countDocuments({ status: "archived" }),
+    InboundEmail.countDocuments({ isStarred: true, status: { $ne: "trash" } }),
   ]);
 
   return {
@@ -382,7 +422,7 @@ export const getInboxStats = async () => {
  * Helper to find an inbound email document by MongoDB _id, Resend ID, or Message-ID.
  * Prevents CastError when querying non-ObjectId strings like UUIDs.
  */
-export const findInboundEmailDoc = async (id, selectExtra = '') => {
+export const findInboundEmailDoc = async (id, selectExtra = "") => {
   if (!id) return null;
   let query;
   if (mongoose.isValidObjectId(id)) {
@@ -403,14 +443,17 @@ export const findInboundEmailDoc = async (id, selectExtra = '') => {
  * Automatically marks email as read unless peek=true.
  */
 export const getInboundEmailById = async (id, { peek = false } = {}) => {
-  const email = await findInboundEmailDoc(id, '+rawPayload');
+  const email = await findInboundEmailDoc(id, "+rawPayload");
   if (!email) {
     throw ApiError.notFound(`Inbound email '${id}' not found`);
   }
 
   if (!peek && !email.isRead) {
     email.isRead = true;
-    await InboundEmail.updateOne({ _id: email._id }, { $set: { isRead: true } });
+    await InboundEmail.updateOne(
+      { _id: email._id },
+      { $set: { isRead: true } },
+    );
   }
 
   return email;
@@ -426,15 +469,15 @@ export const updateInboundEmail = async (id, { isRead, status, isStarred }) => {
   }
 
   const updates = {};
-  if (typeof isRead === 'boolean') {
+  if (typeof isRead === "boolean") {
     email.isRead = isRead;
     updates.isRead = isRead;
   }
-  if (typeof isStarred === 'boolean') {
+  if (typeof isStarred === "boolean") {
     email.isStarred = isStarred;
     updates.isStarred = isStarred;
   }
-  if (status && ['received', 'archived', 'spam', 'trash'].includes(status)) {
+  if (status && ["received", "archived", "spam", "trash"].includes(status)) {
     email.status = status;
     updates.status = status;
   }
@@ -455,12 +498,15 @@ export const deleteInboundEmail = async (id, { permanent = false } = {}) => {
     throw ApiError.notFound(`Inbound email '${id}' not found`);
   }
 
-  if (permanent || email.status === 'trash') {
+  if (permanent || email.status === "trash") {
     await InboundEmail.deleteOne({ _id: email._id });
     return { success: true, deleted: true, permanent: true };
   }
 
-  await InboundEmail.updateOne({ _id: email._id }, { $set: { status: 'trash' } });
+  await InboundEmail.updateOne(
+    { _id: email._id },
+    { $set: { status: "trash" } },
+  );
   return { success: true, deleted: true, permanent: false };
 };
 
@@ -469,43 +515,46 @@ export const deleteInboundEmail = async (id, { permanent = false } = {}) => {
  */
 export const bulkUpdateInboundEmails = async ({ ids = [], action }) => {
   if (!Array.isArray(ids) || ids.length === 0) {
-    throw ApiError.badRequest('No email IDs provided for bulk action');
+    throw ApiError.badRequest("No email IDs provided for bulk action");
   }
 
   let updateQuery = {};
   switch (action) {
-    case 'mark_read':
+    case "mark_read":
       updateQuery = { $set: { isRead: true } };
       break;
-    case 'mark_unread':
+    case "mark_unread":
       updateQuery = { $set: { isRead: false } };
       break;
-    case 'archive':
-      updateQuery = { $set: { status: 'archived' } };
+    case "archive":
+      updateQuery = { $set: { status: "archived" } };
       break;
-    case 'unarchive':
-      updateQuery = { $set: { status: 'received' } };
+    case "unarchive":
+      updateQuery = { $set: { status: "received" } };
       break;
-    case 'spam':
-      updateQuery = { $set: { status: 'spam' } };
+    case "spam":
+      updateQuery = { $set: { status: "spam" } };
       break;
-    case 'star':
+    case "star":
       updateQuery = { $set: { isStarred: true } };
       break;
-    case 'unstar':
+    case "unstar":
       updateQuery = { $set: { isStarred: false } };
       break;
-    case 'trash':
-      updateQuery = { $set: { status: 'trash' } };
+    case "trash":
+      updateQuery = { $set: { status: "trash" } };
       break;
-    case 'delete':
+    case "delete":
       await InboundEmail.deleteMany({ _id: { $in: ids } });
       return { success: true, count: ids.length, permanent: true };
     default:
       throw ApiError.badRequest(`Unknown bulk action: '${action}'`);
   }
 
-  const result = await InboundEmail.updateMany({ _id: { $in: ids } }, updateQuery);
+  const result = await InboundEmail.updateMany(
+    { _id: { $in: ids } },
+    updateQuery,
+  );
   return { success: true, count: result.modifiedCount || ids.length };
 };
 
@@ -513,7 +562,7 @@ export const bulkUpdateInboundEmails = async ({ ids = [], action }) => {
  * Reconstructs or extracts raw payload / EML text for developer inspection and download.
  */
 export const getRawEmailData = async (id) => {
-  const email = await findInboundEmailDoc(id, '+rawPayload');
+  const email = await findInboundEmailDoc(id, "+rawPayload");
   if (!email) {
     throw ApiError.notFound(`Inbound email '${id}' not found`);
   }
@@ -523,22 +572,22 @@ export const getRawEmailData = async (id) => {
     `Message-ID: ${email.messageId}`,
     `Date: ${email.receivedAt.toUTCString()}`,
     `From: ${email.fromName ? `"${email.fromName}" <${email.fromEmail}>` : email.fromEmail}`,
-    `To: ${email.toEmail.join(', ')}`,
-    email.cc?.length ? `Cc: ${email.cc.join(', ')}` : null,
+    `To: ${email.toEmail.join(", ")}`,
+    email.cc?.length ? `Cc: ${email.cc.join(", ")}` : null,
     email.replyTo ? `Reply-To: ${email.replyTo}` : null,
     `Subject: ${email.subject}`,
     `MIME-Version: 1.0`,
-    `Content-Type: ${email.htmlBody ? 'text/html; charset=utf-8' : 'text/plain; charset=utf-8'}`,
+    `Content-Type: ${email.htmlBody ? "text/html; charset=utf-8" : "text/plain; charset=utf-8"}`,
   ]
     .filter(Boolean)
-    .join('\r\n');
+    .join("\r\n");
 
-  const emlContent = `${headerLines}\r\n\r\n${email.htmlBody || email.textBody || ''}`;
+  const emlContent = `${headerLines}\r\n\r\n${email.htmlBody || email.textBody || ""}`;
 
   return {
     rawPayload: email.rawPayload || email.toObject(),
     emlContent,
-    filename: `email-${email.messageId.replace(/[^a-zA-Z0-9_-]/g, '_')}.eml`,
+    filename: `email-${email.messageId.replace(/[^a-zA-Z0-9_-]/g, "_")}.eml`,
   };
 };
 
@@ -548,24 +597,26 @@ export const getRawEmailData = async (id) => {
  */
 export const syncWithResend = async () => {
   if (!env.RESEND_API_KEY) {
-    throw ApiError.badRequest('RESEND_API_KEY is not configured in environment variables');
+    throw ApiError.badRequest(
+      "RESEND_API_KEY is not configured in environment variables",
+    );
   }
 
   // 1. Fetch list of received emails from Resend Receiving API
-  const listRes = await fetch('https://api.resend.com/emails/receiving', {
-    method: 'GET',
+  const listRes = await fetch("https://api.resend.com/emails/receiving", {
+    method: "GET",
     headers: {
       Authorization: `Bearer ${env.RESEND_API_KEY}`,
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
     },
   });
 
   const listData = await listRes.json();
 
   if (!listRes.ok) {
-    if (listData?.name === 'restricted_api_key' || listRes.status === 401) {
+    if (listData?.name === "restricted_api_key" || listRes.status === 401) {
       throw ApiError.forbidden(
-        'Your Resend API Key is restricted to sending only. In Resend Dashboard -> API keys, create a new key with "Full access" (Sending + Receiving) and update RESEND_API_KEY.'
+        'Your Resend API Key is restricted to sending only. In Resend Dashboard -> API keys, create a new key with "Full access" (Sending + Receiving) and update RESEND_API_KEY.',
       );
     }
     throw new Error(listData?.message || `Resend API Error ${listRes.status}`);
@@ -577,7 +628,7 @@ export const syncWithResend = async () => {
       success: true,
       count: 0,
       totalRemote: 0,
-      message: 'No received emails found on Resend',
+      message: "No received emails found on Resend",
     };
   }
 
@@ -599,13 +650,16 @@ export const syncWithResend = async () => {
 
     // 2. Fetch full email details from Resend Receiving API
     try {
-      const detailRes = await fetch(`https://api.resend.com/emails/receiving/${resendId}`, {
-        method: 'GET',
-        headers: {
-          Authorization: `Bearer ${env.RESEND_API_KEY}`,
-          'Content-Type': 'application/json',
+      const detailRes = await fetch(
+        `https://api.resend.com/emails/receiving/${resendId}`,
+        {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${env.RESEND_API_KEY}`,
+            "Content-Type": "application/json",
+          },
         },
-      });
+      );
 
       if (detailRes.ok) {
         const detail = await detailRes.json();
@@ -616,7 +670,9 @@ export const syncWithResend = async () => {
         syncedCount++;
       }
     } catch (fetchErr) {
-      logger.warn(`[Inbox:Sync] Failed fetching detail for email ${resendId}: ${fetchErr.message}`);
+      logger.warn(
+        `[Inbox:Sync] Failed fetching detail for email ${resendId}: ${fetchErr.message}`,
+      );
     }
   }
 
@@ -644,5 +700,3 @@ export default {
   getRawEmailData,
   syncWithResend,
 };
-
-
