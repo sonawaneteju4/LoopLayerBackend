@@ -6,7 +6,7 @@ test('Email Service - getSMTPDiagnostics masks credentials safely', () => {
   const diag = getSMTPDiagnostics();
 
   assert.ok(diag.status);
-  assert.ok(diag.host.includes('resend') || diag.host.includes('zoho'));
+  assert.ok(diag.host.includes('resend') || diag.host.includes('zoho') || diag.host.includes('amazonaws'));
   assert.ok(diag.port === 443 || diag.port === 465);
   assert.equal(diag.secure, true);
   // Email or API identifier should be present

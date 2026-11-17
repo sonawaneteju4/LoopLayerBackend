@@ -79,14 +79,20 @@ export const sendMail = async ({
     logger.error(`[Mail] Could not create EmailLog record: ${dbErr.message}`);
   }
 
-  // Handle development mode when SMTP credentials are not yet configured
-  if (!env.SMTP.USER && !env.SMTP.PASS && !env.RESEND_API_KEY) {
-    logger.warn(`[Mail] Simulated send (missing SMTP credentials) -> To: ${cleanTo} | Subject: "${cleanSubject}"`);
+  // Handle development mode when credentials are not yet configured
+  const hasCredentials =
+    (env.EMAIL_PROVIDER === 'ses' && env.AWS_SES.ACCESS_KEY_ID && env.AWS_SES.SECRET_ACCESS_KEY) ||
+    (env.EMAIL_PROVIDER === 'resend' && env.RESEND_API_KEY) ||
+    (env.EMAIL_PROVIDER === 'zoho' && env.SMTP.USER && env.SMTP.PASS);
+
+  if (!hasCredentials) {
+    const providerName = env.EMAIL_PROVIDER ? env.EMAIL_PROVIDER.toUpperCase() : 'MAIL';
+    logger.warn(`[Mail] Simulated send (missing ${providerName} credentials) -> To: ${cleanTo} | Subject: "${cleanSubject}"`);
     if (logRecord) {
       logRecord.status = 'Delivered';
       logRecord.sentAt = new Date();
       logRecord.messageId = `simulated-${Date.now()}`;
-      logRecord.metadata = { ...logRecord.metadata, simulated: true };
+      logRecord.metadata = { ...logRecord.metadata, simulated: true, provider: providerName };
       await logRecord.save();
     }
     return {
@@ -197,16 +203,17 @@ export const sendMail = async ({
     const info = await mailTransporter.sendMail(mailOptions);
 
     // Update EmailLog on success
+    const providerLabel = env.EMAIL_PROVIDER === 'ses' ? 'AWS SES' : 'Zoho Mail SMTP';
     if (logRecord) {
       logRecord.status = 'Delivered';
       logRecord.sentAt = new Date();
       logRecord.messageId = info.messageId;
       logRecord.errorMessage = null;
-      logRecord.metadata = { ...logRecord.metadata, provider: 'Zoho Mail SMTP' };
+      logRecord.metadata = { ...logRecord.metadata, provider: providerLabel };
       await logRecord.save();
     }
 
-    logger.info(`[Mail:Zoho] Delivered successfully to ${cleanTo} (${type}) | Message ID: ${info.messageId}`);
+    logger.info(`[Mail:${providerLabel}] Delivered successfully to ${cleanTo} (${type}) | Message ID: ${info.messageId}`);
     return {
       success: true,
       messageId: info.messageId,

@@ -87,8 +87,15 @@ export const env = {
       process.env.ADMIN_NOTIFICATION_EMAIL || "looplayerdesign@gmail.com",
   },
 
-  // Email Provider: 'zoho' | 'resend' (Defaults to 'zoho' SMTP)
-  EMAIL_PROVIDER: (process.env.EMAIL_PROVIDER || "zoho").toLowerCase(),
+  // Email Provider: 'ses' | 'zoho' | 'resend'
+  EMAIL_PROVIDER: (process.env.EMAIL_PROVIDER || "ses").toLowerCase(),
+
+  // AWS SES Configuration (HTTPS Port 443 - Fully Supported on Render)
+  AWS_SES: {
+    REGION: process.env.AWS_REGION || "us-east-1",
+    ACCESS_KEY_ID: process.env.AWS_ACCESS_KEY_ID || "",
+    SECRET_ACCESS_KEY: process.env.AWS_SECRET_ACCESS_KEY || "",
+  },
 
   // HTTP Email API (Bypasses Render Free Tier SMTP port blocking over HTTPS port 443)
   RESEND_API_KEY: process.env.RESEND_API_KEY || "",

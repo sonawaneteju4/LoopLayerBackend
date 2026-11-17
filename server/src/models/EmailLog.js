@@ -46,6 +46,8 @@ const emailLogSchema = new mongoose.Schema(
         'contact_confirmation',
         'contact_notification',
         'admin_reply',
+        'admin_inbound_notification',
+        'system',
         'custom',
       ],
       required: [true, 'Email type is required'],
