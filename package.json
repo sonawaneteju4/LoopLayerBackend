@@ -10,6 +10,8 @@
     "start": "npm start --prefix server",
     "dev": "npm run dev --prefix server",
     "test": "npm test --prefix server"
+  },
+  "devDependencies": {
+    "wrangler": "^4.163.0"
   }
 }
-

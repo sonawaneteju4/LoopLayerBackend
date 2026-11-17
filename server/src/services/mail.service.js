@@ -97,8 +97,8 @@ export const sendMail = async ({
     };
   }
 
-  // 1. If RESEND_API_KEY is configured, dispatch via HTTPS (Port 443 - bypasses Render Free Tier SMTP blocking)
-  if (env.RESEND_API_KEY) {
+  // 1. If explicit Resend provider is configured, dispatch via HTTPS (Port 443)
+  if (env.EMAIL_PROVIDER === 'resend' && env.RESEND_API_KEY) {
     try {
       const resendPayload = {
         from: env.RESEND_FROM || env.SMTP.FROM,
@@ -202,10 +202,11 @@ export const sendMail = async ({
       logRecord.sentAt = new Date();
       logRecord.messageId = info.messageId;
       logRecord.errorMessage = null;
+      logRecord.metadata = { ...logRecord.metadata, provider: 'Zoho Mail SMTP' };
       await logRecord.save();
     }
 
-    logger.info(`[Mail] Delivered successfully to ${cleanTo} (${type}) | Message ID: ${info.messageId}`);
+    logger.info(`[Mail:Zoho] Delivered successfully to ${cleanTo} (${type}) | Message ID: ${info.messageId}`);
     return {
       success: true,
       messageId: info.messageId,
@@ -387,8 +388,8 @@ export const retryEmail = async (emailLogId) => {
     };
   }
 
-  // 1. If Resend is active, dispatch retry via Resend HTTPS API (Port 443)
-  if (env.RESEND_API_KEY) {
+  // 1. If Resend is active provider, dispatch retry via Resend HTTPS API (Port 443)
+  if (env.EMAIL_PROVIDER === 'resend' && env.RESEND_API_KEY) {
     try {
       const resendPayload = {
         from: env.RESEND_FROM || env.SMTP.FROM,
@@ -470,9 +471,10 @@ export const retryEmail = async (emailLogId) => {
     logRecord.sentAt = new Date();
     logRecord.messageId = info.messageId;
     logRecord.errorMessage = null;
+    logRecord.metadata = { ...logRecord.metadata, provider: 'Zoho Mail SMTP' };
     await logRecord.save();
 
-    logger.info(`[Mail] Retry succeeded for log ${emailLogId} to ${logRecord.recipient}`);
+    logger.info(`[Mail:Zoho] Retry succeeded for log ${emailLogId} to ${logRecord.recipient}`);
     return {
       success: true,
       messageId: info.messageId,

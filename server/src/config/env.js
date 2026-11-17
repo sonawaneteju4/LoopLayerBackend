@@ -87,6 +87,9 @@ export const env = {
       process.env.ADMIN_NOTIFICATION_EMAIL || "looplayerdesign@gmail.com",
   },
 
+  // Email Provider: 'zoho' | 'resend' (Defaults to 'zoho' SMTP)
+  EMAIL_PROVIDER: (process.env.EMAIL_PROVIDER || "zoho").toLowerCase(),
+
   // HTTP Email API (Bypasses Render Free Tier SMTP port blocking over HTTPS port 443)
   RESEND_API_KEY: process.env.RESEND_API_KEY || "",
   RESEND_WEBHOOK_SECRET: process.env.RESEND_WEBHOOK_SECRET || "",

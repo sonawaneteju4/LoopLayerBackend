@@ -1,21 +1,21 @@
 import { Router } from 'express';
-import webhookController from '../controllers/webhook.controller.js';
-import { webhookLimiter } from '../middleware/rateLimiter.middleware.js';
 
 const router = Router();
 
-// Apply rate limiter to inbound webhooks
-router.use(webhookLimiter);
-
 /**
- * @route   POST /api/inbound-email & /api/webhooks/resend/inbound
- * @desc    Resend Inbound Email Webhook endpoint
- * @access  Public (Authenticated via Svix Signature / Header)
+ * Inbound Email Webhook has been retired in favor of Zoho Mail.
+ * Respond with 200 OK to immediately stop Svix / Resend retry loops.
  */
-router.post('/', webhookController.handleResendInbound);
-router.post('/inbound-email', webhookController.handleResendInbound);
-router.post('/resend/inbound', webhookController.handleResendInbound);
-router.post('/inbound', webhookController.handleResendInbound);
+const retiredWebhookHandler = (req, res) => {
+  return res.status(200).json({
+    success: true,
+    message: 'Inbound email webhook has been retired. Incoming emails are managed directly via Zoho Mail.',
+  });
+};
+
+router.all('/', retiredWebhookHandler);
+router.all('/inbound-email', retiredWebhookHandler);
+router.all('/resend/inbound', retiredWebhookHandler);
+router.all('/inbound', retiredWebhookHandler);
 
 export default router;
-
