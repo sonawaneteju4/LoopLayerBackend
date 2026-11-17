@@ -84,7 +84,7 @@ export const env = {
       process.env.SMTP_FROM ||
       `"${process.env.FROM_NAME || "LoopLayer Designs"}" <${process.env.FROM_EMAIL || "orders@looplayerdesign.com"}>`,
     ADMIN_EMAIL:
-      process.env.ADMIN_NOTIFICATION_EMAIL || "looplayerdesign@gmail.com",
+      process.env.ADMIN_NOTIFICATION_EMAIL || "orders@looplayerdesign.com",
   },
 
   // Email Provider: 'ses' | 'zoho' | 'resend'
@@ -101,7 +101,7 @@ export const env = {
   RESEND_API_KEY: process.env.RESEND_API_KEY || "",
   RESEND_WEBHOOK_SECRET: process.env.RESEND_WEBHOOK_SECRET || "",
   ADMIN_NOTIFICATION_EMAIL:
-    process.env.ADMIN_NOTIFICATION_EMAIL || "looplayerdesign@gmail.com",
+    process.env.ADMIN_NOTIFICATION_EMAIL || "orders@looplayerdesign.com",
   RESEND_FROM:
     process.env.RESEND_FROM ||
     process.env.SMTP_FROM ||
