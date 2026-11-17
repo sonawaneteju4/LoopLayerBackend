@@ -43,7 +43,7 @@ services:
       - key: FROM_EMAIL
         value: orders@looplayerdesign.com
       - key: ADMIN_NOTIFICATION_EMAIL
-        value: looplayerdesign@gmail.com
+        value: orders@looplayerdesign.com
       - key: RESEND_API_KEY
         sync: false
       - key: RESEND_FROM

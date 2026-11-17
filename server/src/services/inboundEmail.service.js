@@ -166,18 +166,18 @@ export const processInboundWebhook = async (payload, headers = {}) => {
             Authorization: `Bearer ${env.RESEND_API_KEY}`,
             "Content-Type": "application/json",
           },
-        }
+        },
       );
       if (detailRes.ok) {
         const detail = await detailRes.json();
         data = { ...data, ...detail };
         logger.info(
-          `[Inbox:Resend] Enriched inbound email ${resendId} with full message body from Resend API`
+          `[Inbox:Resend] Enriched inbound email ${resendId} with full message body from Resend API`,
         );
       }
     } catch (fetchErr) {
       logger.warn(
-        `[Inbox:Resend] Could not fetch detail for ${resendId}: ${fetchErr.message}`
+        `[Inbox:Resend] Could not fetch detail for ${resendId}: ${fetchErr.message}`,
       );
     }
   }
@@ -266,7 +266,7 @@ export const processInboundWebhook = async (payload, headers = {}) => {
           }
         } catch (cloudErr) {
           logger.warn(
-            `[Inbox:Attachment] Cloudinary upload skipped for ${filename}: ${cloudErr.message}`
+            `[Inbox:Attachment] Cloudinary upload skipped for ${filename}: ${cloudErr.message}`,
           );
         }
       }
@@ -282,7 +282,7 @@ export const processInboundWebhook = async (payload, headers = {}) => {
         content: att.content || null,
         contentId: att.content_id || "",
       };
-    })
+    }),
   );
 
   // 6. Spam score detection
@@ -322,7 +322,7 @@ export const processInboundWebhook = async (payload, headers = {}) => {
   await emailRecord.save();
 
   logger.info(
-    `[Inbox] Inbound email saved: From: ${fromEmail} | Subject: "${subject}" | Attachments: ${attachments.length} | ID: ${emailRecord._id}`
+    `[Inbox] Inbound email saved: From: ${fromEmail} | Subject: "${subject}" | Attachments: ${attachments.length} | ID: ${emailRecord._id}`,
   );
 
   // 8. Broadcast real-time SSE event to all connected admin dashboards
@@ -338,7 +338,7 @@ export const processInboundWebhook = async (payload, headers = {}) => {
   // 9. Send Admin Notification Email via Resend
   sendAdminInboundNotification(emailRecord).catch((notifErr) => {
     logger.error(
-      `[Inbox:Notification] Admin email alert error: ${notifErr.message}`
+      `[Inbox:Notification] Admin email alert error: ${notifErr.message}`,
     );
   });
 
@@ -359,7 +359,7 @@ export const sendAdminInboundNotification = async (emailRecord) => {
   const adminEmail =
     env.ADMIN_NOTIFICATION_EMAIL ||
     env.SMTP.ADMIN_EMAIL ||
-    "looplayerdesign@gmail.com";
+    "orders@looplayerdesign.com";
 
   // Guard against notification loops if the incoming message is from the admin email itself
   if (
@@ -367,7 +367,7 @@ export const sendAdminInboundNotification = async (emailRecord) => {
     emailRecord.fromEmail.toLowerCase() === adminEmail.toLowerCase()
   ) {
     logger.info(
-      `[Inbox:Notification] Skipping admin notification: sender is admin email (${adminEmail})`
+      `[Inbox:Notification] Skipping admin notification: sender is admin email (${adminEmail})`,
     );
     return { success: true, skipped: true };
   }
@@ -391,7 +391,7 @@ export const sendAdminInboundNotification = async (emailRecord) => {
   });
 
   logger.info(
-    `[Inbox:Notification] Admin notification dispatched to ${adminEmail} for email ${emailRecord._id} (success: ${result.success})`
+    `[Inbox:Notification] Admin notification dispatched to ${adminEmail} for email ${emailRecord._id} (success: ${result.success})`,
   );
   return result;
 };
