@@ -52,13 +52,12 @@ test('Email Template - Customer Quote Confirmation formatting & content', () => 
   assert.ok(result.html.includes('Thank you for submitting your request'));
   assert.ok(result.html.includes('LLD-2026-000042'));
   assert.ok(result.html.includes('Embroidery Digitizing'));
-  assert.ok(result.html.includes('Business Hours'));
-  assert.ok(result.html.includes('No Reply'));
-  assert.ok(result.html.includes('Visit Website'));
-  assert.ok(result.html.includes('Nagpur, Maharashtra'));
-  assert.ok(result.html.includes(env.SMTP.FROM_EMAIL));
+  assert.ok(result.html.includes('24 hours'));
+  assert.ok(result.html.includes('Team LoopLayer Design'));
+  assert.ok(result.html.includes('orders@looplayerdesign.com'));
+  assert.ok(result.html.includes('www.looplayerdesign.com'));
 
-  // Ensure header uses typography only, NO img logo
+  // Ensure header uses clean typography
   assert.ok(result.html.includes('Loop<span style="color: #2563EB;">Layer</span>'));
   assert.ok(!result.html.includes('<img'));
 });
@@ -82,9 +81,10 @@ test('Email Template - Customer Contact Confirmation', () => {
 
   assert.equal(result.subject, "We've Received Your Message");
   assert.ok(result.html.includes('Hello Elena Rostova,'));
-  assert.ok(result.html.includes('one business day'));
+  assert.ok(result.html.includes('24 hours'));
   assert.ok(result.html.includes('Custom Patches for Cycling Club'));
-  assert.ok(result.html.includes('Visit Website'));
+  assert.ok(result.html.includes('Team LoopLayer Design'));
+  assert.ok(result.html.includes('orders@looplayerdesign.com'));
 });
 
 test('Email Template - Admin Contact Notification', () => {

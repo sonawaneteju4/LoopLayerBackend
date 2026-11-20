@@ -36,10 +36,10 @@ export const createQuote = async (quoteData, files = []) => {
   }
 
   // 3. Normalize Name (handles name or firstName/lastName)
-  const fullName = quoteData.name || `${quoteData.firstName || ''} ${quoteData.lastName || ''}`.trim();
-  const nameParts = fullName.split(' ');
-  const firstName = quoteData.firstName || nameParts[0] || 'Valued';
-  const lastName = quoteData.lastName || nameParts.slice(1).join(' ') || 'Customer';
+  const rawFullName = (quoteData.name || `${quoteData.firstName || ''} ${quoteData.lastName || ''}`).trim();
+  const nameParts = rawFullName.split(/\s+/).filter(Boolean);
+  const firstName = (quoteData.firstName || nameParts[0] || '').trim();
+  const lastName = (quoteData.lastName || (nameParts.length > 1 ? nameParts.slice(1).join(' ') : '')).trim();
 
   // 4. Map uploaded files to schema
   const formattedFiles = uploadedFilesMetadata.map((f) => ({

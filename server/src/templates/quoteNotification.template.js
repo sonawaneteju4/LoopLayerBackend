@@ -16,7 +16,11 @@ import env from '../config/env.js';
  * - Open Dashboard Button
  */
 export const renderQuoteNotification = (quote) => {
-  const customerName = `${quote.customer?.firstName || ''} ${quote.customer?.lastName || ''}`.trim() || 'Guest';
+  const rawFirstName = (quote.customer?.firstName || '').trim();
+  const rawLastName = (quote.customer?.lastName || '').trim();
+  const cleanLastName = rawLastName.toLowerCase() === 'customer' ? '' : rawLastName;
+  const cleanFirstName = rawFirstName.toLowerCase() === 'customer' ? '' : rawFirstName;
+  const customerName = `${cleanFirstName} ${cleanLastName}`.trim() || quote.customer?.name || 'Client';
   const requestId = quote.requestId || 'LLD-2026-000001';
   const service = quote.service || 'Embroidery Digitizing';
   const timestamp = quote.createdAt ? new Date(quote.createdAt).toISOString() : new Date().toISOString();
@@ -32,7 +36,7 @@ export const renderQuoteNotification = (quote) => {
   const detailRows = [
     { label: 'Order ID', value: requestId, isHighlighted: true },
     { label: 'Timestamp', value: `${formattedTime} (${timestamp})` },
-    { label: 'Customer Name', value: customerName },
+    { label: 'Name', value: customerName },
     { label: 'Email', value: quote.customer?.email || '-' },
     { label: 'Phone', value: quote.customer?.phone || '-' },
     { label: 'Country', value: quote.customer?.country || '-' },

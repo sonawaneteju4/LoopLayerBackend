@@ -126,7 +126,8 @@ const quoteSchema = new mongoose.Schema(
       },
       lastName: {
         type: String,
-        required: [true, 'Last name is required'],
+        required: false,
+        default: '',
         trim: true,
       },
       email: {

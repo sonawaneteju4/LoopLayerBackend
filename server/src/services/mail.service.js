@@ -3,6 +3,7 @@ import mailTransporter, {
   getSMTPDiagnostics,
 } from '../config/mail.js';
 import env from '../config/env.js';
+import mongoose from 'mongoose';
 import EmailLog from '../models/EmailLog.js';
 import logger, { logEmailFailure } from '../utils/logger.js';
 import { ApiError } from '../utils/response.js';
@@ -54,29 +55,32 @@ export const sendMail = async ({
   const cleanTo = to.toLowerCase().trim();
   const fallbackText = text || html.replace(/<[^>]*>?/gm, ' ').replace(/\s+/g, ' ').trim();
 
-  // Create initial pending/in-flight EmailLog record
-  let logRecord;
-  try {
-    logRecord = new EmailLog({
-      recipient: cleanTo,
-      recipientName: recipientName.trim(),
-      subject: cleanSubject,
-      type,
-      relatedId,
-      relatedType,
-      htmlContent: html,
-      textContent: fallbackText,
-      status: 'Failed', // Initial pessimistic state until delivery succeeds
-      attachments: attachments.map((a) => ({
-        filename: a.filename || 'attachment',
-        url: a.path || a.href || '',
-        size: a.size || 0,
-      })),
-      metadata,
-    });
-    await logRecord.save();
-  } catch (dbErr) {
-    logger.error(`[Mail] Could not create EmailLog record: ${dbErr.message}`);
+  // Create initial pending/in-flight EmailLog record (if MongoDB is connected)
+  let logRecord = null;
+  if (mongoose.connection.readyState === 1) {
+    try {
+      const pendingLog = new EmailLog({
+        recipient: cleanTo,
+        recipientName: recipientName.trim(),
+        subject: cleanSubject,
+        type,
+        relatedId,
+        relatedType,
+        htmlContent: html,
+        textContent: fallbackText,
+        status: 'Failed', // Initial pessimistic state until delivery succeeds
+        attachments: attachments.map((a) => ({
+          filename: a.filename || 'attachment',
+          url: a.path || a.href || '',
+          size: a.size || 0,
+        })),
+        metadata,
+      });
+      logRecord = await pendingLog.save();
+    } catch (dbErr) {
+      logRecord = null;
+      logger.error(`[Mail] Could not create EmailLog record: ${dbErr.message}`);
+    }
   }
 
   // Handle development mode when credentials are not yet configured
@@ -204,13 +208,17 @@ export const sendMail = async ({
 
     // Update EmailLog on success
     const providerLabel = env.EMAIL_PROVIDER === 'ses' ? 'AWS SES' : 'Zoho Mail SMTP';
-    if (logRecord) {
-      logRecord.status = 'Delivered';
-      logRecord.sentAt = new Date();
-      logRecord.messageId = info.messageId;
-      logRecord.errorMessage = null;
-      logRecord.metadata = { ...logRecord.metadata, provider: providerLabel };
-      await logRecord.save();
+    if (logRecord && mongoose.connection.readyState === 1) {
+      try {
+        logRecord.status = 'Delivered';
+        logRecord.sentAt = new Date();
+        logRecord.messageId = info.messageId;
+        logRecord.errorMessage = null;
+        logRecord.metadata = { ...logRecord.metadata, provider: providerLabel };
+        await logRecord.save();
+      } catch (err) {
+        logger.warn(`[Mail] Could not update EmailLog status: ${err.message}`);
+      }
     }
 
     logger.info(`[Mail:${providerLabel}] Delivered successfully to ${cleanTo} (${type}) | Message ID: ${info.messageId}`);
@@ -332,7 +340,7 @@ export const sendContactNotification = async (contact) => {
  */
 export const sendReplyEmail = async ({
   to,
-  recipientName = 'Customer',
+  recipientName = '',
   subject,
   message,
   threadHistory = [],

@@ -84,7 +84,7 @@ export const composeAndSendEmail = async (req, res, next) => {
 
     const result = await mailService.sendReplyEmail({
       to,
-      recipientName: recipientName || 'Customer',
+      recipientName: (recipientName || '').replace(/\s+Customer$/i, '').trim(),
       subject,
       message: cleanMessage,
       threadHistory: threadHistory || [],

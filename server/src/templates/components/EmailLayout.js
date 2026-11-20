@@ -8,11 +8,19 @@ import Footer from './Footer.js';
  * @param {string} params.title - Page & preview title
  * @param {string} params.previewText - Preheader snippet text
  * @param {string} params.content - Body HTML
+ * @param {boolean} [params.showHeader=true] - Whether to render header
+ * @param {boolean} [params.showFooter=true] - Whether to render footer
  * @returns {string} Complete HTML Document
  */
-export const EmailLayout = ({ title, previewText = '', content }) => `
+export const EmailLayout = ({
+  title,
+  previewText = '',
+  content,
+  showHeader = true,
+  showFooter = true,
+}) => `
 <!DOCTYPE html>
-<html lang="en" xmlns="http://www.w3.org/1999/xhtml" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -22,11 +30,6 @@ export const EmailLayout = ({ title, previewText = '', content }) => `
   <meta name="supported-color-schemes" content="light">
   <title>${title}</title>
   
-  <!-- Inter Font -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-
   <style>
     /* Reset & Base */
     html, body {
@@ -35,13 +38,11 @@ export const EmailLayout = ({ title, previewText = '', content }) => `
       height: 100% !important;
       width: 100% !important;
       background-color: #F8FAFC;
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
       -webkit-font-smoothing: antialiased;
       -moz-osx-font-smoothing: grayscale;
     }
     * {
-      -ms-text-size-adjust: 100%;
-      -webkit-text-size-adjust: 100%;
       box-sizing: border-box;
     }
     table, td {
@@ -55,7 +56,6 @@ export const EmailLayout = ({ title, previewText = '', content }) => `
       margin: 0 auto !important;
     }
     img {
-      -ms-interpolation-mode: bicubic;
       max-width: 100%;
       border: 0;
       outline: none;
@@ -83,16 +83,10 @@ export const EmailLayout = ({ title, previewText = '', content }) => `
         padding-left: 20px !important;
         padding-right: 20px !important;
       }
-      .mobile-stack {
-        display: block !important;
-        width: 100% !important;
-        text-align: left !important;
-      }
     }
   </style>
 </head>
 <body style="margin: 0; padding: 24px 0; background-color: #F8FAFC; -webkit-text-size-adjust: 100%;">
-  <!-- Preheader text (Snippet displayed in email client list) -->
   ${
     previewText
       ? `<div style="display: none; font-size: 1px; line-height: 1px; max-height: 0px; max-width: 0px; opacity: 0; overflow: hidden; mso-hide: all; font-family: sans-serif;">
@@ -102,25 +96,21 @@ export const EmailLayout = ({ title, previewText = '', content }) => `
       : ''
   }
 
-  <!-- Center Wrapper -->
   <center style="width: 100%; background-color: #F8FAFC;">
     <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #F8FAFC;">
       <tr>
         <td align="center" style="padding: 12px 10px;">
-          <!-- 640px Max Width Card -->
-          <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" class="email-container" style="max-width: 640px; margin: 0 auto; background-color: #FFFFFF; border-radius: 12px; border: 1px solid #E2E8F0; box-shadow: 0 4px 16px rgba(15, 23, 42, 0.04); overflow: hidden;">
-            <!-- Header -->
-            ${Header()}
+          <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" class="email-container" style="max-width: 600px; margin: 0 auto; background-color: #FFFFFF; border-radius: 8px; border: 1px solid #E2E8F0; overflow: hidden;">
+            ${showHeader ? Header() : ''}
 
             <!-- Body Content -->
             <tr>
-              <td class="mobile-padding" style="padding: 36px 32px 32px 32px; background-color: #FFFFFF; color: #1E293B; line-height: 1.6; font-size: 15px;">
+              <td class="mobile-padding" style="padding: 28px 32px 28px 32px; background-color: #FFFFFF; color: #1E293B; line-height: 1.6; font-size: 15px; text-align: left;">
                 ${content}
               </td>
             </tr>
 
-            <!-- Footer -->
-            ${Footer()}
+            ${showFooter ? Footer() : ''}
           </table>
         </td>
       </tr>
@@ -131,4 +121,3 @@ export const EmailLayout = ({ title, previewText = '', content }) => `
 `;
 
 export default EmailLayout;
-
