@@ -3,17 +3,8 @@ import env from '../config/env.js';
 
 /**
  * Admin Quote Notification Email Template
- *
- * Subject: New Quote Request — {Request ID}
- * Includes:
- * - Customer
- * - Phone
- * - Email
- * - Country
- * - Selected Service
- * - Project Notes
- * - Uploaded Files list (with links)
- * - Open Dashboard Button
+ * Alerts orders@looplayerdesign.com when a new quote is submitted.
+ * Prominently flags Rush Orders for immediate studio attention.
  */
 export const renderQuoteNotification = (quote) => {
   const rawFirstName = (quote.customer?.firstName || '').trim();
@@ -23,6 +14,9 @@ export const renderQuoteNotification = (quote) => {
   const customerName = `${cleanFirstName} ${cleanLastName}`.trim() || quote.customer?.name || 'Client';
   const requestId = quote.requestId || 'LLD-2026-000001';
   const service = quote.service || 'Embroidery Digitizing';
+  const turnaround = quote.turnaround || 'Standard';
+  const isRush = Boolean(quote.isRush || /rush|express/i.test(turnaround));
+
   const timestamp = quote.createdAt ? new Date(quote.createdAt).toISOString() : new Date().toISOString();
   const formattedTime = new Date(timestamp).toLocaleString('en-US', {
     dateStyle: 'medium',
@@ -31,10 +25,17 @@ export const renderQuoteNotification = (quote) => {
   }) + ' IST';
   const dashboardUrl = `${env.CLIENT_URL || 'https://looplayerdesign.com'}/admin/quotes/${quote._id || requestId}`;
 
-  const subject = `New Quote Request — ${requestId}`;
+  const subject = isRush
+    ? `⚡ [RUSH ORDER] New Quote Request — ${requestId}`
+    : `New Quote Request — ${requestId}`;
 
   const detailRows = [
     { label: 'Order ID', value: requestId, isHighlighted: true },
+    {
+      label: 'Turnaround Priority',
+      value: isRush ? `<span style="color: #DC2626; font-weight: 700;">⚡ ${turnaround} (RUSH)</span>` : turnaround,
+      isHighlighted: isRush,
+    },
     { label: 'Timestamp', value: `${formattedTime} (${timestamp})` },
     { label: 'Name', value: customerName },
     { label: 'Email', value: quote.customer?.email || '-' },
@@ -71,23 +72,39 @@ export const renderQuoteNotification = (quote) => {
     filesHtml = `<ul style="margin: 0; padding-left: 20px; color: #334155;">${listItems}</ul>`;
   }
 
+  const alertBadgeHtml = isRush
+    ? `
+      <div style="margin-bottom: 18px;">
+        <span style="display: inline-block; background-color: #FEF2F2; border: 1px solid #FECACA; color: #DC2626; font-size: 12px; font-weight: 800; padding: 5px 14px; border-radius: 9999px; letter-spacing: 0.5px;">
+          🚨 RUSH ORDER &bull; PRIORITY ATTENTION REQUIRED
+        </span>
+      </div>
+    `
+    : `
+      <div style="margin-bottom: 18px;">
+        <span style="display: inline-block; background-color: #FEF3C7; border: 1px solid #FDE68A; color: #B45309; font-size: 12px; font-weight: 700; padding: 4px 12px; border-radius: 9999px; letter-spacing: 0.3px;">
+          Production Alert &bull; New Quote
+        </span>
+      </div>
+    `;
+
   const bodyContent = `
     <!-- Top Alert Badge -->
-    <div style="margin-bottom: 18px;">
-      <span style="display: inline-block; background-color: #FEF3C7; border: 1px solid #FDE68A; color: #B45309; font-size: 12px; font-weight: 700; padding: 4px 12px; border-radius: 9999px; letter-spacing: 0.3px;">
-        Production Alert &bull; New Quote
-      </span>
-    </div>
+    ${alertBadgeHtml}
 
     <h1 style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 20px; font-weight: 700; color: #0F172A; margin: 0 0 14px 0; letter-spacing: -0.3px;">
-      New Quote Request Received: <span style="color: #2563EB;">${requestId}</span>
+      ${isRush ? '⚡ Rush Quote Request:' : 'New Quote Request Received:'} <span style="color: #2563EB;">${requestId}</span>
     </h1>
 
     <p style="font-size: 15px; color: #334155; line-height: 24px; margin: 0 0 20px 0;">
-      A new customer project has been submitted via the LoopLayer Designs website and requires estimation.
+      ${
+        isRush
+          ? '<strong>CRITICAL:</strong> A client has requested <strong>Rush Turnaround</strong> for embroidery digitizing. Review files immediately.'
+          : 'A new customer project has been submitted via the website and requires digitizer estimation.'
+      }
     </p>
 
-    <!-- Customer & Project Specifications Table -->
+    <!-- Specifications Table -->
     <div style="margin: 20px 0 16px 0;">
       <div style="font-size: 13px; font-weight: 700; color: #0F172A; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;">
         Submission Specifications
@@ -105,13 +122,17 @@ export const renderQuoteNotification = (quote) => {
           ${quote.projectRequirements || 'None specified.'}
         </div>
       `,
-      { accentColor: '#F97316', backgroundColor: '#FFFBEB', borderColor: '#FDE68A' }
+      {
+        accentColor: isRush ? '#DC2626' : '#F97316',
+        backgroundColor: isRush ? '#FEF2F2' : '#FFFBEB',
+        borderColor: isRush ? '#FECACA' : '#FDE68A',
+      }
     )}
 
     <!-- Uploaded Files Section -->
     <div style="background-color: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px; padding: 18px 20px; margin: 20px 0;">
       <div style="font-size: 13px; font-weight: 700; color: #0F172A; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px;">
-        Uploaded Artwork Files (${quote.uploadedFiles?.length || 0})
+        Uploaded Artwork Files (${allFiles.length})
       </div>
       ${filesHtml}
     </div>
@@ -130,12 +151,13 @@ export const renderQuoteNotification = (quote) => {
 
   const html = EmailLayout({
     title: subject,
-    previewText: `New quote ${requestId} submitted by ${customerName} for ${service}.`,
+    previewText: `${isRush ? '⚡ [RUSH] ' : ''}New quote ${requestId} submitted by ${customerName} for ${service}. Priority: ${turnaround}`,
     content: bodyContent,
   });
 
   const text = `
-New Quote Request / Order ID: ${requestId}
+${isRush ? '⚡ [RUSH ORDER] ' : ''}New Quote Request / Order ID: ${requestId}
+Priority / Turnaround: ${turnaround}${isRush ? ' (RUSH PRIORITY)' : ''}
 Timestamp: ${timestamp}
 Service: ${service}
 Customer: ${customerName}
@@ -156,4 +178,3 @@ Open Dashboard: ${dashboardUrl}
 };
 
 export default renderQuoteNotification;
-

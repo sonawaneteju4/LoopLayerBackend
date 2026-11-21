@@ -170,6 +170,16 @@ const quoteSchema = new mongoose.Schema(
         default: 'in',
       },
     },
+    turnaround: {
+      type: String,
+      default: 'Standard',
+      trim: true,
+    },
+    isRush: {
+      type: Boolean,
+      default: false,
+      index: true,
+    },
     projectRequirements: {
       type: String,
       required: [true, 'Project requirements are required'],

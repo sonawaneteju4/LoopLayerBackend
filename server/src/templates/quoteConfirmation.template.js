@@ -1,5 +1,4 @@
 import { EmailLayout, Table, InfoCard } from './components/index.js';
-import env from '../config/env.js';
 
 /**
  * Customer Quote Confirmation Email Template
@@ -23,11 +22,15 @@ export const renderQuoteConfirmation = (quote) => {
       })
     : new Date().toLocaleDateString('en-US');
 
+  const turnaround = quote.turnaround || 'Standard';
+  const isRush = Boolean(quote.isRush || /rush|express/i.test(turnaround));
+
   const subject = `We've Received Your Project Request [${requestId}]`;
 
   const specRows = [
     { label: 'Request ID', value: requestId, isHighlighted: true },
     { label: 'Selected Service', value: service },
+    { label: 'Turnaround', value: isRush ? `⚡ ${turnaround} (Rush Queue)` : turnaround },
     { label: 'Submission Date', value: submissionDate },
     { label: 'Name', value: displayName },
     { label: 'Email', value: quote.customer?.email || '-' },
@@ -50,7 +53,18 @@ export const renderQuoteConfirmation = (quote) => {
     });
   }
 
+  const rushAlertHtml = isRush
+    ? `
+      <div style="background-color: #FEF2F2; border: 1px solid #FECACA; border-radius: 6px; padding: 12px 16px; margin: 0 0 18px 0;">
+        <span style="font-size: 13px; font-weight: 700; color: #DC2626;">⚡ Rush Priority Logged:</span>
+        <span style="font-size: 13px; color: #991B1B;"> Your project has been prioritized in our digitizing queue for rapid turnaround.</span>
+      </div>
+    `
+    : '';
+
   const bodyContent = `
+    ${rushAlertHtml}
+
     <h1 style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 19px; font-weight: 700; color: #0F172A; margin: 0 0 16px 0; letter-spacing: -0.3px;">
       Hello ${greetingName},
     </h1>
@@ -60,7 +74,7 @@ export const renderQuoteConfirmation = (quote) => {
     </p>
 
     <p style="font-size: 15px; color: #334155; line-height: 24px; margin: 0 0 20px 0;">
-      Our embroidery digitizing specialists and vector artists will carefully review your project details and get back to you with a quote within <strong>24 hours</strong>.
+      Our embroidery digitizing specialists and vector artists will carefully review your project details and get back to you with a quote <strong>soon</strong>.
     </p>
 
     <!-- Order Summary Table -->
@@ -94,20 +108,21 @@ export const renderQuoteConfirmation = (quote) => {
 
   const html = EmailLayout({
     title: subject,
-    previewText: `We've received your project request [${requestId}] at LoopLayer Design. We'll reply within 24 hours.`,
+    previewText: `We've received your project request [${requestId}] at LoopLayer Design. We'll reply soon.`,
     content: bodyContent,
   });
 
   const text = `
 Hello ${greetingName},
 
-Thank you for submitting your project request to LoopLayer Design. We have successfully received your project details and uploaded artwork.
+Thank you for submitting your request to LoopLayer Design. We have successfully received your project details and uploaded artwork.
 
-Our embroidery digitizing specialists and vector artists will carefully review your project details and get back to you with a quote within 24 hours.
+Our embroidery digitizing specialists and vector artists will carefully review your project details and get back to you with a quote soon.
 
 Order Summary:
 - Request ID: ${requestId}
 - Selected Service: ${service}
+- Turnaround: ${turnaround}${isRush ? ' (Rush Priority)' : ''}
 - Submission Date: ${submissionDate}
 - Name: ${displayName}
 - Email: ${quote.customer?.email || '-'}

@@ -52,7 +52,7 @@ test('Email Template - Customer Quote Confirmation formatting & content', () => 
   assert.ok(result.html.includes('Thank you for submitting your request'));
   assert.ok(result.html.includes('LLD-2026-000042'));
   assert.ok(result.html.includes('Embroidery Digitizing'));
-  assert.ok(result.html.includes('24 hours'));
+  assert.ok(result.html.includes('soon'));
   assert.ok(result.html.includes('Team LoopLayer Design'));
   assert.ok(result.html.includes('orders@looplayerdesign.com'));
   assert.ok(result.html.includes('www.looplayerdesign.com'));
@@ -76,12 +76,25 @@ test('Email Template - Admin Quote Notification formatting & specs', () => {
   assert.ok(result.html.includes('Open In Dashboard'));
 });
 
+test('Email Template - Admin Quote Notification prominently flags Rush Order', () => {
+  const result = renderQuoteNotification({
+    ...mockQuote,
+    isRush: true,
+    turnaround: 'Rush (4-6 hrs)',
+  });
+
+  assert.ok(result.subject.includes('[RUSH ORDER]'));
+  assert.ok(result.html.includes('RUSH ORDER'));
+  assert.ok(result.html.includes('Rush (4-6 hrs)'));
+  assert.ok(result.html.includes('PRIORITY ATTENTION REQUIRED'));
+});
+
 test('Email Template - Customer Contact Confirmation', () => {
   const result = renderContactConfirmation(mockContact);
 
   assert.equal(result.subject, "We've Received Your Message");
   assert.ok(result.html.includes('Hello Elena Rostova,'));
-  assert.ok(result.html.includes('24 hours'));
+  assert.ok(result.html.includes('soon'));
   assert.ok(result.html.includes('Custom Patches for Cycling Club'));
   assert.ok(result.html.includes('Team LoopLayer Design'));
   assert.ok(result.html.includes('orders@looplayerdesign.com'));

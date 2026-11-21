@@ -56,7 +56,17 @@ export const createQuote = async (quoteData, files = []) => {
     resourceType: f.resourceType || 'raw',
   }));
 
-  // 5. Assemble Quote Document
+  // 5. Turnaround & Rush Resolution
+  const rawTurnaround = (quoteData.turnaround || quoteData.urgency || 'Standard').trim();
+  const isRush = /rush|urgent|express/i.test(rawTurnaround);
+  let turnaround = 'Standard';
+  if (/super/i.test(rawTurnaround)) {
+    turnaround = 'Super Rush (2-4 hrs)';
+  } else if (isRush) {
+    turnaround = 'Rush (4-6 hrs)';
+  }
+
+  // 6. Assemble Quote Document
   const quote = new Quote({
     requestId,
     customer: {
@@ -72,6 +82,8 @@ export const createQuote = async (quoteData, files = []) => {
       height: quoteData.height ? Number(quoteData.height) : null,
       unit: quoteData.unit || 'in',
     },
+    turnaround,
+    isRush,
     projectRequirements: quoteData.projectRequirements || 'Customer project specifications submitted via website.',
     uploadedFiles: formattedFiles,
     files: formattedFiles,

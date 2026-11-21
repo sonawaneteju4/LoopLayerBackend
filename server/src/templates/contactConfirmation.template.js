@@ -37,7 +37,7 @@ export const renderContactConfirmation = (contact) => {
     </p>
 
     <p style="font-size: 15px; color: #334155; line-height: 24px; margin: 0 0 20px 0;">
-      Our team is reviewing your inquiry and will get back to you within <strong>24 hours</strong>.
+      Our team is reviewing your inquiry and will get back to you <strong>soon</strong>.
     </p>
 
     <!-- Details Table -->
@@ -81,7 +81,7 @@ Hello ${cleanName},
 
 Thank you for reaching out to LoopLayer Design. We have received your message regarding "${subjectText}".
 
-Our team is reviewing your inquiry and will get back to you within 24 hours.
+Our team is reviewing your inquiry and will get back to you soon.
 
 Inquiry Details:
 - Name: ${cleanName}

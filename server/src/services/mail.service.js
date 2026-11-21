@@ -20,7 +20,14 @@ import renderAdminReply from '../templates/reply.template.js';
  */
 const sanitizeHeader = (str = '') => {
   if (typeof str !== 'string') return '';
-  return str.replace(/[\r\n]+/g, ' ').trim();
+  return str
+    .replace(/[\r\n]+/g, ' ')
+    .replace(/&amp;/gi, '&')
+    .replace(/&lt;/gi, '<')
+    .replace(/&gt;/gi, '>')
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;/gi, "'")
+    .trim();
 };
 
 /**
